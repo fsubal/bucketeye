@@ -1,0 +1,52 @@
+{
+  "name": "bucketeye",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Review objects that already live in your S3-compatible bucket: comments, approval status written back to S3, JSON API and webhooks.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "concurrently -n server,web -c blue,magenta \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "tsx watch src/server/index.ts",
+    "dev:web": "vite",
+    "build": "npm run build:web && npm run build:server",
+    "build:web": "vite build",
+    "build:server": "esbuild src/server/index.ts --bundle --platform=node --target=node24 --format=esm --outfile=dist/server.js --external:node:* --alias:@=./src --sourcemap --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\"",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.web.json && tsc -p tsconfig.server.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1141.0",
+    "@aws-sdk/s3-request-presigner": "^3.1141.0",
+    "@hono/node-server": "^2.1.1",
+    "@tanstack/react-query": "^5.104.0",
+    "hono": "^4.13.9",
+    "jose": "^6.2.12",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router": "^8.4.0",
+    "ulid": "^3.0.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "concurrently": "^10.0.5",
+    "esbuild": "^0.28.2",
+    "jsdom": "^30.1.1",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
+  }
+}

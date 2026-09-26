@@ -1,0 +1,32 @@
+# セルフホストで本番に近い構成の見本: oauth2-proxy を前段に置き、アプリは X-Forwarded-Email を信用する。
+#   docker compose -f compose.yml -f compose.oauth2-proxy.yml up --build
+# OAUTH2_PROXY_CLIENT_ID / CLIENT_SECRET / COOKIE_SECRET は自分の OIDC プロバイダ（Google 等）の値を .env に置く。
+# アプリの 3000 番は閉じ、4180 番（oauth2-proxy）だけを開ける。
+services:
+  app:
+    ports: !override []
+    environment:
+      AUTH_PROVIDER: forwarded_header
+      AUTH_ALLOW_DEVELOPER_IN_PRODUCTION: "false"
+      AUTH_EMAIL_HEADER: X-Forwarded-Email
+      AUTH_NAME_HEADER: X-Forwarded-Preferred-Username
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:latest
+    ports:
+      - "4180:4180"
+    environment:
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      OAUTH2_PROXY_UPSTREAMS: http://app:80
+      OAUTH2_PROXY_PROVIDER: ${OAUTH2_PROXY_PROVIDER:-google}
+      OAUTH2_PROXY_CLIENT_ID: ${OAUTH2_PROXY_CLIENT_ID:?set in .env}
+      OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_CLIENT_SECRET:?set in .env}
+      OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET:?set in .env (32 bytes, base64)}
+      OAUTH2_PROXY_EMAIL_DOMAINS: ${OAUTH2_PROXY_EMAIL_DOMAINS:-*}
+      OAUTH2_PROXY_REDIRECT_URL: ${OAUTH2_PROXY_REDIRECT_URL:-http://localhost:4180/oauth2/callback}
+      OAUTH2_PROXY_COOKIE_SECURE: "false"
+      # アプリに身元ヘッダを渡す
+      OAUTH2_PROXY_PASS_USER_HEADERS: "true"
+      OAUTH2_PROXY_SET_XAUTHREQUEST: "true"
+    depends_on:
+      - app

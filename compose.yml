@@ -1,0 +1,70 @@
+# ローカルで全体を試すための構成: アプリ + S3 互換ストレージ（RustFS）+ サンプルデータ投入。
+#   docker compose up --build
+#   → http://localhost:3000 （AUTH_PROVIDER=developer なので好きなメールでログインできる）
+#   → http://localhost:9001 （RustFS コンソール, rustfsadmin / rustfsadmin）
+# MinIO の公式イメージは公開レジストリから取れなくなったので、MinIO 互換の RustFS を使う（versity/versitygw でも動作確認済み）。
+# 自分のアプリの compose に足すときは app サービスだけを持っていく（README 参照）
+x-app-env: &app-env
+  S3_ENDPOINT: http://s3:9000
+  S3_PUBLIC_ENDPOINT: http://localhost:9000
+  S3_REGION: us-east-1
+  S3_BUCKET: manuscripts
+  S3_ACCESS_KEY_ID: rustfsadmin
+  S3_SECRET_ACCESS_KEY: rustfsadmin
+  S3_FORCE_PATH_STYLE: "true"
+  TARGET_PREFIX: submissions/
+  REVIEW_PREFIX: .review/
+  STATUS_STRATEGY: tags
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      <<: *app-env
+      # 認証: デモなので developer。実運用では gcp_iap / aws_alb / cloudflare_access / forwarded_header
+      AUTH_PROVIDER: developer
+      AUTH_ALLOW_DEVELOPER_IN_PRODUCTION: "true"
+      SECRET_KEY: ${SECRET_KEY:-insecure-demo-secret-key-change-me}
+      ADMIN_EMAILS: admin@example.com
+      API_TOKENS: ${API_TOKENS:-demo-api-token}
+      PUBLIC_URL: http://localhost:3000
+    volumes:
+      - app-data:/data
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+  s3:
+    image: rustfs/rustfs:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+      RUSTFS_CONSOLE_ENABLE: "true"
+    volumes:
+      - s3-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/health || wget -qO- http://localhost:9000/health || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  # バケットを作り、script/sample/ の中身を submissions/ に投入する（同じ内容があればスキップし、タグを壊さない）
+  seed:
+    build: .
+    environment:
+      <<: *app-env
+    volumes:
+      - ./script/sample:/sample:ro
+    command: ["node", "dist/server.js", "seed", "/sample"]
+    depends_on:
+      s3:
+        condition: service_healthy
+
+volumes:
+  app-data:
+  s3-data:

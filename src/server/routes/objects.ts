@@ -1,0 +1,250 @@
+import { Hono, type Context } from "hono";
+import { z } from "zod";
+import { Selector } from "@/domains/Annotation/model";
+import { normalizePrefix, ReviewStatus } from "@/domains/ReviewedObject/model";
+import type { AppEnv } from "../app";
+import {
+  countByStatus,
+  countObjects,
+  findObject,
+  listChildPrefixes,
+  listObjects,
+  toReviewedObject,
+  updateObjectStatus,
+} from "../db/objects";
+import { upsertComment } from "../db/comments";
+import { lastIndexRun } from "../db/indexRuns";
+import { hasAnyObject } from "../db/objects";
+import { isTargetKey } from "../indexer/indexer";
+import { findOrSyncObject, syncComments, syncObject } from "../indexer/sync";
+import { HttpProblem } from "./problem";
+
+const TEXT_PREVIEW_BYTES = 256 * 1024;
+const DEFAULT_PER = 100;
+const MAX_PER = 500;
+
+const ListQuery = z.object({
+  prefix: z.string().default(""),
+  status: ReviewStatus.optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  per: z.coerce.number().int().min(1).max(MAX_PER).default(DEFAULT_PER),
+  updated_since: z.string().optional(),
+});
+
+const CommentInput = z.object({
+  body: z.string().trim().min(1, "コメントを入力してください").max(10_000),
+  selector: Selector.optional(),
+});
+const StatusInput = z.object({ status: ReviewStatus });
+
+export function objectsRoutes() {
+  const r = new Hono<AppEnv>();
+
+  // GET /objects?prefix=&status=&page=&per=
+  r.get("/", (c) => {
+    const { config, db, s3 } = c.get("deps");
+    const q = ListQuery.safeParse(c.req.query());
+    if (!q.success)
+      throw new HttpProblem(
+        400,
+        "invalid_query",
+        q.error.issues
+          .map((i) => `${i.path.join(".")}: ${i.message}`)
+          .join("; "),
+      );
+    const relativePrefix = normalizePrefix(q.data.prefix);
+    const fullPrefix = config.s3.targetPrefix + relativePrefix;
+    const status = q.data.status ?? null;
+    const opts = {
+      bucket: s3.bucket,
+      prefix: fullPrefix,
+      status,
+      limit: q.data.per,
+      offset: (q.data.page - 1) * q.data.per,
+    };
+    const total = countObjects(db, opts);
+    let objects = listObjects(db, opts).map(toReviewedObject);
+    if (q.data.updated_since) {
+      const since = new Date(q.data.updated_since);
+      if (Number.isNaN(since.getTime()))
+        throw new HttpProblem(
+          400,
+          "invalid_query",
+          "updated_since must be ISO8601",
+        );
+      objects = objects.filter(
+        (o) => o.status_updated_at && new Date(o.status_updated_at) >= since,
+      );
+    }
+    return c.json({
+      prefix: relativePrefix,
+      status,
+      // ステータスで絞るときはフォルダを無視して prefix 以下を平らに並べる（「承認済み一覧」の意味）
+      folders: status ? [] : listChildPrefixes(db, s3.bucket, fullPrefix),
+      objects,
+      pagination: { page: q.data.page, per: q.data.per, total },
+      counts: countByStatus(db, s3.bucket, fullPrefix),
+      indexed: hasAnyObject(db, s3.bucket),
+      last_index_run: lastIndexRun(db),
+    });
+  });
+
+  // GET /objects/*  — S3 から読み直して返す（索引が古くても詳細は最新）
+  r.get("/*", async (c) => {
+    const deps = c.get("deps");
+    const key = targetKey(c, "/api/v1/objects/");
+    const object = await syncObject(deps, key);
+    if (!object) throw new HttpProblem(404, "not_found");
+    const comments = await syncComments(deps, key);
+    const preview: Record<string, unknown> = {
+      kind: object.kind,
+      download_url: await deps.s3.presign(key, { inline: false }),
+    };
+    if (
+      object.kind === "image" ||
+      object.kind === "video" ||
+      object.kind === "audio"
+    )
+      preview["url"] = await deps.s3.presign(key);
+    if (object.kind === "pdf")
+      preview["url"] = await deps.s3.presign(key, {
+        contentType: "application/pdf",
+      });
+    if (object.kind === "text")
+      preview["text_url"] = `/api/v1/texts/${encodeURI(key)}`;
+    return c.json({ object, comments, preview });
+  });
+
+  return r;
+}
+
+/**
+ * キーはスラッシュを含むので、動詞つきの操作は /objects/*key/comments のような形にせず別の名前空間に置く
+ * （Hono の RegExpRouter は /:key{.+} を貪欲に先に当てるため、後置きのサブパスは曖昧になる）
+ */
+export function textsRoutes() {
+  const r = new Hono<AppEnv>();
+  // GET /texts/*  — テキストプレビュー（先頭 256KB）
+  r.get("/*", async (c) => {
+    const { s3, db } = c.get("deps");
+    const key = targetKey(c, "/api/v1/texts/");
+    const bytes = await s3.readHead(key, TEXT_PREVIEW_BYTES);
+    if (bytes === null) throw new HttpProblem(404, "not_found");
+    const object = findObject(db, s3.bucket, key);
+    c.header(
+      "X-Truncated",
+      object && (object.size ?? 0) > TEXT_PREVIEW_BYTES ? "true" : "false",
+    );
+    return c.text(new TextDecoder("utf-8", { fatal: false }).decode(bytes));
+  });
+  return r;
+}
+
+export function commentsRoutes() {
+  const r = new Hono<AppEnv>();
+
+  // GET /comments/*  — W3C Annotation の平たい形で返す
+  r.get("/*", async (c) => {
+    const deps = c.get("deps");
+    const key = targetKey(c, "/api/v1/comments/");
+    if (!(await findOrSyncObject(deps, key)))
+      throw new HttpProblem(404, "not_found");
+    return c.json({ comments: await syncComments(deps, key) });
+  });
+
+  // POST /comments/*  {body, selector?}
+  r.post("/*", async (c) => {
+    const deps = c.get("deps");
+    const key = targetKey(c, "/api/v1/comments/");
+    const input = CommentInput.safeParse(await c.req.json().catch(() => ({})));
+    if (!input.success)
+      throw new HttpProblem(
+        422,
+        "invalid_comment",
+        input.error.issues.map((i) => i.message).join("; "),
+      );
+    const object = await findOrSyncObject(deps, key);
+    if (!object) throw new HttpProblem(404, "not_found");
+
+    // S3 に書いてから SQLite に写す（S3 が真実）
+    const annotation = await deps.commentStore.append(key, {
+      body: input.data.body,
+      creator: c.get("identity"),
+      selector: input.data.selector,
+    });
+    const comment = upsertComment(deps.db, deps.s3.bucket, key, annotation);
+    deps.dispatcher.emit({
+      type: "comment.created",
+      key,
+      data: { bucket: deps.s3.bucket, key, comment: annotation, object },
+    });
+    return c.json({ comment }, 201);
+  });
+
+  return r;
+}
+
+export function statusesRoutes() {
+  const r = new Hono<AppEnv>();
+
+  // PUT /statuses/*  {status}
+  r.put("/*", async (c) => {
+    const deps = c.get("deps");
+    const key = targetKey(c, "/api/v1/statuses/");
+    const input = StatusInput.safeParse(await c.req.json().catch(() => ({})));
+    if (!input.success)
+      throw new HttpProblem(
+        422,
+        "invalid_status",
+        input.error.issues.map((i) => i.message).join("; "),
+      );
+    const before = await findOrSyncObject(deps, key);
+    if (!before) throw new HttpProblem(404, "not_found");
+
+    const identity = c.get("identity");
+    const written = await deps.statusStore.write(
+      key,
+      input.data.status,
+      identity.email,
+    );
+    updateObjectStatus(deps.db, deps.s3.bucket, key, {
+      status: written.status,
+      updatedAt: written.updatedAt,
+      reviewer: written.reviewer,
+    });
+    const object = {
+      ...before,
+      status: written.status,
+      status_updated_at: written.updatedAt,
+      reviewer: written.reviewer,
+    };
+    if (before.status !== written.status) {
+      deps.dispatcher.emit({
+        type: "object.status_changed",
+        key,
+        data: {
+          bucket: deps.s3.bucket,
+          key,
+          status: written.status,
+          previous_status: before.status,
+          reviewer: identity.email,
+          object,
+        },
+      });
+    }
+    return c.json({ object });
+  });
+
+  return r;
+}
+
+/** パスからキーを取り出し、対象範囲（TARGET_PREFIX 以下、サイドカー以外）か確かめる */
+function targetKey(c: Context<AppEnv>, base: string): string {
+  const path = c.req.path;
+  const key = path.startsWith(base)
+    ? decodeURIComponent(path.slice(base.length))
+    : "";
+  if (!isTargetKey(c.get("deps").config, key))
+    throw new HttpProblem(404, "not_found", "key is outside TARGET_PREFIX");
+  return key;
+}
