@@ -3,7 +3,7 @@ import {
   commentOf,
   ulidOf,
   type Annotation,
-  type Comment,
+  Comment,
   Selector,
 } from "@/domains/Annotation/model";
 
@@ -22,14 +22,15 @@ function toComment(row: CommentRow): Comment {
   const parsed = row.selector
     ? Selector.safeParse(JSON.parse(row.selector))
     : null;
-  return {
+
+  return Comment.parse({
     id: row.ulid,
     authorEmail: row.author_email,
     authorName: row.author_name,
     body: row.body,
-    selector: parsed?.success ? parsed.data : null,
+    selector: parsed?.data ?? null,
     createdAt: row.created_at,
-  };
+  });
 }
 
 export function upsertComment(

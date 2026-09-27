@@ -16,7 +16,7 @@ export function Preview({
   switch (preview.kind) {
     case "image":
       return (
-        <div className="flex items-center justify-center bg-[repeating-conic-gradient(#f3f4f6_0%_25%,#fff_0%_50%)] bg-[length:20px_20px] p-4">
+        <div className="flex items-center justify-center bg-[repeating-conic-gradient(#f3f4f6_0%_25%,#fff_0%_50%)] bg-size-[20px_20px] p-4">
           <img
             src={preview.url}
             alt={object.name}
