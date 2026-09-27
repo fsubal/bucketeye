@@ -115,18 +115,18 @@ s3://<S3_BUCKET>/
 
 レスポンスのキーはすべて camelCase です（`contentType`、`statusUpdatedAt` など）。例外はコメントの W3C Web Annotation 形式で、キーは仕様どおり（`@context`、`conformsTo` など）です。ステータス値（`changes_requested`）やイベント名（`object.status_changed`）は値なので snake_case のままです。
 
-| メソッド                    | パス                                                          | 説明                                                                                |
-| --------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| GET                         | `/api/v1/objects?prefix=2026/&status=approved&page=1&per=100` | オブジェクト一覧（索引から返す）。`status` を付けるとフォルダを無視して平らに並べる |
-| GET                         | `/api/v1/objects/<key>`                                       | 1 件（S3 から読み直す）+ コメント + プレビュー用 URL                                |
-| GET                         | `/api/v1/texts/<key>`                                         | テキストプレビュー（先頭 256KB）                                                    |
-| GET / POST                  | `/api/v1/comments/<key>`                                      | コメント一覧 / 投稿 `{ "body": "...", "selector"?: ... }`                           |
-| PUT                         | `/api/v1/statuses/<key>`                                      | 承認ステータス `{ "status": "approved" }`                                           |
-| GET / POST / PATCH / DELETE | `/api/v1/webhooks[/<id>]`                                     | Webhook の登録（admin）                                                             |
-| GET                         | `/api/v1/webhooks/<id>/deliveries`                            | 配送履歴                                                                            |
-| POST                        | `/api/v1/webhooks/<id>/ping`                                  | テスト配送                                                                          |
-| POST                        | `/api/v1/admin/reindex`                                       | 再索引を今すぐ（admin）                                                             |
-| GET                         | `/api/v1/me` / `/api/v1/config`                               | 身元と設定                                                                          |
+| メソッド                    | パス                                                                                            | 説明                                                                                                                                                                                    |
+| --------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET                         | `/api/v1/objects?prefix=2026/&status=approved&updatedSince=2026-09-01T00:00:00Z&page=1&per=100` | オブジェクト一覧（索引から返す）。`status` か `updatedSince`（承認ステータスがその時刻以降に更新されたもの。ISO 8601 の日時でタイムゾーン必須）を付けるとフォルダを無視して平らに並べる |
+| GET                         | `/api/v1/objects/<key>`                                                                         | 1 件（S3 から読み直す）+ コメント + プレビュー用 URL                                                                                                                                    |
+| GET                         | `/api/v1/texts/<key>`                                                                           | テキストプレビュー（先頭 256KB）                                                                                                                                                        |
+| GET / POST                  | `/api/v1/comments/<key>`                                                                        | コメント一覧 / 投稿 `{ "body": "...", "selector"?: ... }`                                                                                                                               |
+| PUT                         | `/api/v1/statuses/<key>`                                                                        | 承認ステータス `{ "status": "approved" }`                                                                                                                                               |
+| GET / POST / PATCH / DELETE | `/api/v1/webhooks[/<id>]`                                                                       | Webhook の登録（admin）                                                                                                                                                                 |
+| GET                         | `/api/v1/webhooks/<id>/deliveries`                                                              | 配送履歴                                                                                                                                                                                |
+| POST                        | `/api/v1/webhooks/<id>/ping`                                                                    | テスト配送                                                                                                                                                                              |
+| POST                        | `/api/v1/admin/reindex`                                                                         | 再索引を今すぐ（admin）                                                                                                                                                                 |
+| GET                         | `/api/v1/me` / `/api/v1/config`                                                                 | 身元と設定                                                                                                                                                                              |
 
 キーはスラッシュを含むので、動詞つきの操作は `/objects/<key>/comments` のような後置きではなく `/comments/<key>` のように別の名前空間になっています。
 

@@ -129,6 +129,8 @@ export type ListOptions = {
   prefix: string;
   /** 指定時はフォルダを無視して prefix 以下を平らに並べる */
   status?: ReviewStatus | null;
+  /** ISO 8601。承認ステータスがこの時刻以降に更新されたものだけ（一度もレビューされていないものは含まない）。指定時は平らに並べる */
+  updatedSince?: string | null;
   limit: number;
   offset: number;
 };
@@ -139,7 +141,14 @@ function listWhere(o: ListOptions): { where: string; params: SQLInputValue[] } {
   if (o.status) {
     where += " AND status = ?";
     params.push(o.status);
-  } else {
+  }
+  if (o.updatedSince) {
+    // 保存形式（秒精度の ...Z）と指定値（ミリ秒やタイムゾーン付き）の文字列比較は順序が狂うので時刻として比べる
+    where +=
+      " AND status_updated_at IS NOT NULL AND julianday(status_updated_at) >= julianday(?)";
+    params.push(new Date(o.updatedSince).toISOString());
+  }
+  if (!o.status && !o.updatedSince) {
     where += ` AND substr(key, ?) NOT LIKE '%/%'`;
     params.push(o.prefix.length + 1);
   }

@@ -22,6 +22,7 @@ export type IndexRun = z.infer<typeof IndexRun>;
 export const ObjectList = z.object({
   prefix: z.string(),
   status: ReviewStatus.nullable(),
+  updatedSince: z.string().nullable(),
   folders: z.array(z.string()),
   objects: z.array(ReviewedObject),
   pagination: z.object({

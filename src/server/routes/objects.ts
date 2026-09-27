@@ -28,7 +28,9 @@ const ListQuery = z.object({
   status: ReviewStatus.optional(),
   page: z.coerce.number().int().min(1).default(1),
   per: z.coerce.number().int().min(1).max(MAX_PER).default(DEFAULT_PER),
-  updatedSince: z.string().optional(),
+  updatedSince: z.iso
+    .datetime({ offset: true, message: "must be an ISO 8601 date-time" })
+    .optional(),
 });
 
 const CommentInput = z.object({
@@ -48,30 +50,24 @@ export function objectsRoutes() {
     const relativePrefix = normalizePrefix(q.data.prefix);
     const fullPrefix = config.s3.targetPrefix + relativePrefix;
     const status = q.data.status ?? null;
+    const updatedSince = q.data.updatedSince ?? null;
+    // 条件で絞るときはフォルダを無視して prefix 以下を平らに並べる（「承認済み一覧」「この時刻以降の変更」の意味）
+    const flat = status !== null || updatedSince !== null;
     const opts = {
       bucket: s3.bucket,
       prefix: fullPrefix,
       status,
+      updatedSince,
       limit: q.data.per,
       offset: (q.data.page - 1) * q.data.per,
     };
     const total = countObjects(db, opts);
-    let objects = listObjects(db, opts).map(toReviewedObject);
-    if (q.data.updatedSince) {
-      const since = new Date(q.data.updatedSince);
-      if (Number.isNaN(since.getTime()))
-        throw HttpProblem.invalidQuery([
-          { path: ["updatedSince"], message: "must be an ISO 8601 date-time" },
-        ]);
-      objects = objects.filter(
-        (o) => o.statusUpdatedAt && new Date(o.statusUpdatedAt) >= since,
-      );
-    }
+    const objects = listObjects(db, opts).map(toReviewedObject);
     return c.json({
       prefix: relativePrefix,
       status,
-      // ステータスで絞るときはフォルダを無視して prefix 以下を平らに並べる（「承認済み一覧」の意味）
-      folders: status ? [] : listChildPrefixes(db, s3.bucket, fullPrefix),
+      updatedSince,
+      folders: flat ? [] : listChildPrefixes(db, s3.bucket, fullPrefix),
       objects,
       pagination: { page: q.data.page, per: q.data.per, total },
       counts: countByStatus(db, s3.bucket, fullPrefix),

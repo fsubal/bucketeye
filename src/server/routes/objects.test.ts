@@ -462,3 +462,105 @@ describe("RFC 9457 Problem Details", () => {
     ]);
   });
 });
+
+describe("updatedSince", () => {
+  /** 承認ステータスの更新時刻を直接指定して書く（S3 のタグと SQLite の両方） */
+  async function approveAt(key: string, iso: string) {
+    await t.statusStore.write(
+      key,
+      "approved",
+      "alice@example.com",
+      new Date(iso),
+    );
+  }
+
+  test("SQL で絞ってからページ分割するので、total とページの中身が一致する", async () => {
+    for (let i = 0; i < 5; i++)
+      t.s3.put(`submissions/batch/${i}.png`, `PNG${i}`, {
+        contentType: "image/png",
+      });
+    // 古い 3 件、新しい 2 件。キー順では新しいものが後ろに来るようにしてある（ページ分割後に絞ると取りこぼす配置）
+    await approveAt("submissions/batch/0.png", "2026-01-01T00:00:00Z");
+    await approveAt("submissions/batch/1.png", "2026-01-01T00:00:00Z");
+    await approveAt("submissions/batch/2.png", "2026-01-01T00:00:00Z");
+    await approveAt("submissions/batch/3.png", "2026-06-01T00:00:00Z");
+    await approveAt("submissions/batch/4.png", "2026-06-01T00:00:00Z");
+    await runIndex(t);
+
+    const page = async (n: number) =>
+      (await (
+        await t.app.request(
+          `/api/v1/objects?updatedSince=2026-03-01T00:00:00Z&per=1&page=${n}`,
+          { headers: auth },
+        )
+      ).json()) as any;
+    const p1 = await page(1);
+    expect(p1.pagination).toEqual({ page: 1, per: 1, total: 2 });
+    expect(p1.updatedSince).toBe("2026-03-01T00:00:00Z");
+    expect(p1.folders).toEqual([]); // 絞り込み時は平らに並べる
+    expect(p1.objects.map((o: { key: string }) => o.key)).toEqual([
+      "submissions/batch/3.png",
+    ]);
+    expect((await page(2)).objects.map((o: { key: string }) => o.key)).toEqual([
+      "submissions/batch/4.png",
+    ]);
+    expect((await page(3)).objects).toEqual([]);
+  });
+
+  test("タイムゾーン付き・ミリ秒付きの指定も時刻として比較し、境界を含む。未レビューは含まない", async () => {
+    await approveAt("submissions/notes.txt", "2026-06-01T00:00:00Z");
+    await runIndex(t);
+    const keys = async (since: string) =>
+      (
+        (await (
+          await t.app.request(
+            `/api/v1/objects?updatedSince=${encodeURIComponent(since)}`,
+            { headers: auth },
+          )
+        ).json()) as any
+      ).objects.map((o: { key: string }) => o.key);
+    expect(await keys("2026-06-01T00:00:00Z")).toEqual([
+      "submissions/notes.txt",
+    ]); // 境界は含む
+    expect(await keys("2026-06-01T09:00:00+09:00")).toEqual([
+      "submissions/notes.txt",
+    ]); // 同じ時刻の別表記
+    expect(await keys("2026-06-01T00:00:00.001Z")).toEqual([]); // 1ms 後は含まない
+    expect(await keys("2026-05-31T23:59:59.999Z")).toEqual([
+      "submissions/notes.txt",
+    ]);
+    expect(await keys("2000-01-01T00:00:00Z")).toEqual([
+      "submissions/notes.txt",
+    ]); // pending の 3 件は含まない
+  });
+
+  test("status と組み合わせられる。不正な日時は invalid-query", async () => {
+    await approveAt("submissions/notes.txt", "2026-06-01T00:00:00Z");
+    await t.statusStore.write(
+      "submissions/2026/body.pdf",
+      "rejected",
+      "alice@example.com",
+      new Date("2026-06-02T00:00:00Z"),
+    );
+    await runIndex(t);
+    const body = (await (
+      await t.app.request(
+        "/api/v1/objects?status=approved&updatedSince=2026-01-01T00:00:00Z",
+        { headers: auth },
+      )
+    ).json()) as any;
+    expect(body.objects.map((o: { key: string }) => o.key)).toEqual([
+      "submissions/notes.txt",
+    ]);
+
+    for (const bad of ["garbage", "2026-06-01", "2026-06-01T00:00:00"]) {
+      const res = await t.app.request(`/api/v1/objects?updatedSince=${bad}`, {
+        headers: auth,
+      });
+      expect(res.status, bad).toBe(400);
+      expect(((await res.json()) as any).errors, bad).toEqual([
+        { detail: "must be an ISO 8601 date-time", parameter: "updatedSince" },
+      ]);
+    }
+  });
+});
