@@ -29,25 +29,23 @@ export class HttpError extends Error {
 }
 
 async function throwProblem(res: Response): Promise<never> {
-  let body: unknown = null;
-  try {
-    body = await res.json();
-  } catch {
-    /* not JSON（プロキシのエラーページなど） */
-  }
-  const parsed = Problem.safeParse(body);
-  throw new HttpError(
-    res.status,
-    parsed.success
-      ? parsed.data
-      : { type: "about:blank", title: res.statusText, status: res.status },
-  );
+  const problem: Problem = await res
+    .json()
+    .then(Problem.parse)
+    // parseできなかったケース、そもそもjsonじゃなかったケースはどちらも同じ内容を返す
+    .catch(() => ({
+      type: "about:blank",
+      title: res.statusText,
+      status: res.status,
+    }));
+
+  throw new HttpError(res.status, problem);
 }
 
 /** JSON API を叩き、zod でパースした値を返す。Response は露出させない */
 export async function request<T>(
   schema: z.ZodType<T>,
-  path: string,
+  path: string | URL,
   init: RequestInit & { json?: unknown } = {},
 ): Promise<T> {
   const { json, ...rest } = init;
@@ -67,7 +65,7 @@ export async function request<T>(
 }
 
 export async function requestText(
-  path: string,
+  path: string | URL,
 ): Promise<{ text: string; truncated: boolean }> {
   const res = await fetch(path, { credentials: "same-origin" });
   if (!res.ok) await throwProblem(res);
