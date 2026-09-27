@@ -71,7 +71,9 @@ export class HttpProblem extends Error {
   /** クエリパラメータの検証エラー。どこが悪いかは errors[].parameter で示す */
   static invalidQuery(issues: ReadonlyArray<Issue>): HttpProblem {
     return HttpProblem.of("invalidQuery", {
-      detail: issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(" / "),
+      detail: issues
+        .map((i) => `${i.path.join(".")}: ${i.message}`)
+        .join(" / "),
       extensions: {
         errors: issues.map((i) => ({
           detail: i.message,

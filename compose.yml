@@ -48,7 +48,11 @@ services:
     volumes:
       - s3-data:/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:9000/health || wget -qO- http://localhost:9000/health || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -sf http://localhost:9000/health || wget -qO- http://localhost:9000/health || exit 1",
+        ]
       interval: 3s
       timeout: 3s
       retries: 30

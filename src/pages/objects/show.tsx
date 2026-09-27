@@ -1,20 +1,25 @@
-import { useQuery } from '@tanstack/react-query'
-import { Link, useParams } from 'react-router'
-import { getObject } from '@/api/objects'
-import { CommentThread } from '@/components/CommentThread'
-import { Preview } from '@/components/Preview'
-import { StatusForm } from '@/components/StatusForm'
-import { parentPrefixOf } from '@/domains/ReviewedObject/model'
-import { formatBytes, formatDate } from '@/utils/format'
+import { useQuery } from "@tanstack/react-query";
+import { Link, useParams } from "react-router";
+import { getObject } from "@/api/objects";
+import { CommentThread } from "@/components/CommentThread";
+import { Preview } from "@/components/Preview";
+import { StatusForm } from "@/components/StatusForm";
+import { parentPrefixOf } from "@/domains/ReviewedObject/model";
+import { formatBytes, formatDate } from "@/utils/format";
 
 export default function ObjectsShow() {
-  const key = decodeURIComponent(useParams()['*'] ?? '')
-  const q = useQuery({ queryKey: ['object', key], queryFn: () => getObject(key), enabled: key !== '' })
+  const key = decodeURIComponent(useParams()["*"] ?? "");
+  const q = useQuery({
+    queryKey: ["object", key],
+    queryFn: () => getObject(key),
+    enabled: key !== "",
+  });
 
-  if (q.isPending) return <p className="text-sm text-gray-500">読み込み中…</p>
-  if (q.isError) return <p className="text-sm text-red-700">{q.error.message}</p>
-  const { object, comments, preview } = q.data
-  const parent = parentPrefixOf(object.key)
+  if (q.isPending) return <p className="text-sm text-gray-500">読み込み中…</p>;
+  if (q.isError)
+    return <p className="text-sm text-red-700">{q.error.message}</p>;
+  const { object, comments, preview } = q.data;
+  const parent = parentPrefixOf(object.key);
 
   return (
     <>
@@ -35,10 +40,14 @@ export default function ObjectsShow() {
         <div>
           <h1 className="text-xl font-semibold break-all">{object.name}</h1>
           <p className="mt-1 text-xs text-gray-500">
-            {object.contentType ?? '不明'} · {formatBytes(object.size)} · 更新 {formatDate(object.lastModified)} · ETag {object.etag}
+            {object.contentType ?? "不明"} · {formatBytes(object.size)} · 更新{" "}
+            {formatDate(object.lastModified)} · ETag {object.etag}
           </p>
         </div>
-        <a href={preview.downloadUrl} className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-100">
+        <a
+          href={preview.downloadUrl}
+          className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-100"
+        >
           ダウンロード
         </a>
       </div>
@@ -53,5 +62,5 @@ export default function ObjectsShow() {
         </div>
       </div>
     </>
-  )
+  );
 }

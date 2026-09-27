@@ -1,5 +1,9 @@
 import type { z } from "zod";
-import { Problem, type ProblemTypeName, isProblemType } from "@/domains/Problem/model";
+import {
+  Problem,
+  type ProblemTypeName,
+  isProblemType,
+} from "@/domains/Problem/model";
 
 /** RFC 9457 Problem Details をそのまま持つエラー。/api 以下の関数はこれを投げる */
 export class HttpError extends Error {

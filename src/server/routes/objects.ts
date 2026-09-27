@@ -44,8 +44,7 @@ export function objectsRoutes() {
   r.get("/", (c) => {
     const { config, db, s3 } = c.get("deps");
     const q = ListQuery.safeParse(c.req.query());
-    if (!q.success)
-      throw HttpProblem.invalidQuery(q.error.issues);
+    if (!q.success) throw HttpProblem.invalidQuery(q.error.issues);
     const relativePrefix = normalizePrefix(q.data.prefix);
     const fullPrefix = config.s3.targetPrefix + relativePrefix;
     const status = q.data.status ?? null;
@@ -139,8 +138,7 @@ export function commentsRoutes() {
   r.get("/*", async (c) => {
     const deps = c.get("deps");
     const key = targetKey(c, "/api/v1/comments/");
-    if (!(await findOrSyncObject(deps, key)))
-      throw HttpProblem.notFound();
+    if (!(await findOrSyncObject(deps, key))) throw HttpProblem.notFound();
     return c.json({ comments: await syncComments(deps, key) });
   });
 
@@ -149,8 +147,7 @@ export function commentsRoutes() {
     const deps = c.get("deps");
     const key = targetKey(c, "/api/v1/comments/");
     const input = CommentInput.safeParse(await c.req.json().catch(() => ({})));
-    if (!input.success)
-      throw HttpProblem.validationFailed(input.error.issues);
+    if (!input.success) throw HttpProblem.validationFailed(input.error.issues);
     const object = await findOrSyncObject(deps, key);
     if (!object) throw HttpProblem.notFound();
 
@@ -180,8 +177,7 @@ export function statusesRoutes() {
     const deps = c.get("deps");
     const key = targetKey(c, "/api/v1/statuses/");
     const input = StatusInput.safeParse(await c.req.json().catch(() => ({})));
-    if (!input.success)
-      throw HttpProblem.validationFailed(input.error.issues);
+    if (!input.success) throw HttpProblem.validationFailed(input.error.issues);
     const before = await findOrSyncObject(deps, key);
     if (!before) throw HttpProblem.notFound();
 

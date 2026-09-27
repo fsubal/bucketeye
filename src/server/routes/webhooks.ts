@@ -30,8 +30,7 @@ export function webhooksRoutes() {
   r.post("/", async (c) => {
     const deps = c.get("deps");
     const input = WebhookInput.safeParse(await c.req.json().catch(() => ({})));
-    if (!input.success)
-      throw HttpProblem.validationFailed(input.error.issues);
+    if (!input.success) throw HttpProblem.validationFailed(input.error.issues);
     const secret = input.data.secret ?? randomBytes(24).toString("base64url");
     const webhook: Webhook = {
       id: generateUlid(),
@@ -56,8 +55,7 @@ export function webhooksRoutes() {
     const input = WebhookInput.partial().safeParse(
       await c.req.json().catch(() => ({})),
     );
-    if (!input.success)
-      throw HttpProblem.validationFailed(input.error.issues);
+    if (!input.success) throw HttpProblem.validationFailed(input.error.issues);
     const webhook: Webhook = {
       ...existing,
       ...input.data,

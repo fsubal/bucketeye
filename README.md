@@ -31,19 +31,19 @@ services:
     image: <ビルドしたイメージ>
     ports: ["3000:3000"]
     environment:
-      S3_ENDPOINT: http://minio:9000          # AWS S3 なら不要
-      S3_PUBLIC_ENDPOINT: https://files.example.com   # ブラウザから見えるホスト
+      S3_ENDPOINT: http://minio:9000 # AWS S3 なら不要
+      S3_PUBLIC_ENDPOINT: https://files.example.com # ブラウザから見えるホスト
       S3_REGION: us-east-1
       S3_BUCKET: my-bucket
       S3_ACCESS_KEY_ID: ...
       S3_SECRET_ACCESS_KEY: ...
       TARGET_PREFIX: uploads/
-      AUTH_PROVIDER: forwarded_header         # 前段の認証プロキシに合わせる（下記）
+      AUTH_PROVIDER: forwarded_header # 前段の認証プロキシに合わせる（下記）
       ADMIN_EMAILS: you@example.com
       API_TOKENS: <長いランダム文字列>
-      PUBLIC_URL: https://review.example.com  # Webhook のペイロードに入れるリンクの元
+      PUBLIC_URL: https://review.example.com # Webhook のペイロードに入れるリンクの元
     volumes:
-      - bucketeye-data:/data                  # SQLite。消えても再索引で復元される（未配送の Webhook だけは失われる）
+      - bucketeye-data:/data # SQLite。消えても再索引で復元される（未配送の Webhook だけは失われる）
 ```
 
 すべての環境変数は `.env.example` にまとめてあります。
@@ -52,13 +52,13 @@ services:
 
 アプリ自身はログインを実装せず、前段のプロキシが付けるヘッダから身元を取ります。JWT を付けるプロキシでは **必ず署名を検証** し、メールアドレスのヘッダ単体は信用しません（ヘッダ偽装対策）。
 
-| `AUTH_PROVIDER` | 前段 | 必要な設定 | 備考 |
-|---|---|---|---|
-| `gcp_iap` | Google Cloud Identity-Aware Proxy | `IAP_AUDIENCE`（`/projects/<番号>/global/backendServices/<ID>`。Cloud Console の IAP 画面 → 「JWT オーディエンス コードを取得」） | `X-Goog-IAP-JWT-Assertion` を ES256 で検証 |
-| `aws_alb` | ALB の認証アクション（Cognito または OIDC IdP。Google も可） | `ALB_REGION`、任意で `ALB_ARN` | `x-amzn-oidc-data` を ALB のリージョン別公開鍵で検証。IAM ではなく ALB の機能です |
-| `cloudflare_access` | Cloudflare Access | `CF_ACCESS_TEAM_DOMAIN`、`CF_ACCESS_AUD` | `Cf-Access-Jwt-Assertion` を RS256 で検証 |
-| `forwarded_header` | oauth2-proxy / Pomerium / Authelia / Authentik | 任意で `AUTH_EMAIL_HEADER`（既定 `X-Forwarded-Email`） | **署名がない。** アプリにプロキシ以外から到達できないネットワーク構成が前提 |
-| `developer` | なし | `SECRET_KEY` | 開発・デモ専用。production では `AUTH_ALLOW_DEVELOPER_IN_PRODUCTION=true` を明示しないと起動しない |
+| `AUTH_PROVIDER`     | 前段                                                         | 必要な設定                                                                                                                        | 備考                                                                                               |
+| ------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `gcp_iap`           | Google Cloud Identity-Aware Proxy                            | `IAP_AUDIENCE`（`/projects/<番号>/global/backendServices/<ID>`。Cloud Console の IAP 画面 → 「JWT オーディエンス コードを取得」） | `X-Goog-IAP-JWT-Assertion` を ES256 で検証                                                         |
+| `aws_alb`           | ALB の認証アクション（Cognito または OIDC IdP。Google も可） | `ALB_REGION`、任意で `ALB_ARN`                                                                                                    | `x-amzn-oidc-data` を ALB のリージョン別公開鍵で検証。IAM ではなく ALB の機能です                  |
+| `cloudflare_access` | Cloudflare Access                                            | `CF_ACCESS_TEAM_DOMAIN`、`CF_ACCESS_AUD`                                                                                          | `Cf-Access-Jwt-Assertion` を RS256 で検証                                                          |
+| `forwarded_header`  | oauth2-proxy / Pomerium / Authelia / Authentik               | 任意で `AUTH_EMAIL_HEADER`（既定 `X-Forwarded-Email`）                                                                            | **署名がない。** アプリにプロキシ以外から到達できないネットワーク構成が前提                        |
+| `developer`         | なし                                                         | `SECRET_KEY`                                                                                                                      | 開発・デモ専用。production では `AUTH_ALLOW_DEVELOPER_IN_PRODUCTION=true` を明示しないと起動しない |
 
 設定が合っているかは `/whoami` で確認できます（届いている認証ヘッダと、誰として見えているかを表示）。oauth2-proxy を前段に置く構成例は `compose.oauth2-proxy.yml` にあります。
 
@@ -91,8 +91,16 @@ s3://<S3_BUCKET>/
   "type": "Annotation",
   "motivation": "commenting",
   "created": "2026-09-26T08:00:00Z",
-  "creator": { "type": "Person", "email": "alice@example.com", "name": "Alice" },
-  "body": { "type": "TextualBody", "value": "表紙の色味を確認してください", "format": "text/plain" },
+  "creator": {
+    "type": "Person",
+    "email": "alice@example.com",
+    "name": "Alice"
+  },
+  "body": {
+    "type": "TextualBody",
+    "value": "表紙の色味を確認してください",
+    "format": "text/plain"
+  },
   "target": { "source": "s3://manuscripts/submissions/2026-10-issue/cover.png" }
 }
 ```
@@ -107,18 +115,18 @@ s3://<S3_BUCKET>/
 
 レスポンスのキーはすべて camelCase です（`contentType`、`statusUpdatedAt` など）。例外はコメントの W3C Web Annotation 形式で、キーは仕様どおり（`@context`、`conformsTo` など）です。ステータス値（`changes_requested`）やイベント名（`object.status_changed`）は値なので snake_case のままです。
 
-| メソッド | パス | 説明 |
-|---|---|---|
-| GET | `/api/v1/objects?prefix=2026/&status=approved&page=1&per=100` | オブジェクト一覧（索引から返す）。`status` を付けるとフォルダを無視して平らに並べる |
-| GET | `/api/v1/objects/<key>` | 1 件（S3 から読み直す）+ コメント + プレビュー用 URL |
-| GET | `/api/v1/texts/<key>` | テキストプレビュー（先頭 256KB） |
-| GET / POST | `/api/v1/comments/<key>` | コメント一覧 / 投稿 `{ "body": "...", "selector"?: ... }` |
-| PUT | `/api/v1/statuses/<key>` | 承認ステータス `{ "status": "approved" }` |
-| GET / POST / PATCH / DELETE | `/api/v1/webhooks[/<id>]` | Webhook の登録（admin） |
-| GET | `/api/v1/webhooks/<id>/deliveries` | 配送履歴 |
-| POST | `/api/v1/webhooks/<id>/ping` | テスト配送 |
-| POST | `/api/v1/admin/reindex` | 再索引を今すぐ（admin） |
-| GET | `/api/v1/me` / `/api/v1/config` | 身元と設定 |
+| メソッド                    | パス                                                          | 説明                                                                                |
+| --------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| GET                         | `/api/v1/objects?prefix=2026/&status=approved&page=1&per=100` | オブジェクト一覧（索引から返す）。`status` を付けるとフォルダを無視して平らに並べる |
+| GET                         | `/api/v1/objects/<key>`                                       | 1 件（S3 から読み直す）+ コメント + プレビュー用 URL                                |
+| GET                         | `/api/v1/texts/<key>`                                         | テキストプレビュー（先頭 256KB）                                                    |
+| GET / POST                  | `/api/v1/comments/<key>`                                      | コメント一覧 / 投稿 `{ "body": "...", "selector"?: ... }`                           |
+| PUT                         | `/api/v1/statuses/<key>`                                      | 承認ステータス `{ "status": "approved" }`                                           |
+| GET / POST / PATCH / DELETE | `/api/v1/webhooks[/<id>]`                                     | Webhook の登録（admin）                                                             |
+| GET                         | `/api/v1/webhooks/<id>/deliveries`                            | 配送履歴                                                                            |
+| POST                        | `/api/v1/webhooks/<id>/ping`                                  | テスト配送                                                                          |
+| POST                        | `/api/v1/admin/reindex`                                       | 再索引を今すぐ（admin）                                                             |
+| GET                         | `/api/v1/me` / `/api/v1/config`                               | 身元と設定                                                                          |
 
 キーはスラッシュを含むので、動詞つきの操作は `/objects/<key>/comments` のような後置きではなく `/comments/<key>` のように別の名前空間になっています。
 
@@ -155,7 +163,12 @@ WEBHOOK_SECRET=<登録時に表示された secret> node scripts/webhook-receive
     "status": "approved",
     "previousStatus": "pending",
     "reviewer": "alice@example.com",
-    "object": { "key": "...", "status": "approved", "contentType": "image/png", "...": "..." }
+    "object": {
+      "key": "...",
+      "status": "approved",
+      "contentType": "image/png",
+      "...": "..."
+    }
   }
 }
 ```
@@ -182,8 +195,12 @@ npm run dev                  # Hono(3000) + Vite(5173)。ブラウザは http://
 npm test                     # vitest。S3 はインメモリ、SQLite は :memory:
 S3_TEST_ENDPOINT=http://localhost:9000 S3_TEST_ACCESS_KEY_ID=rustfsadmin S3_TEST_SECRET_ACCESS_KEY=rustfsadmin npm test -- src/server/s3/aws.test.ts
 npm run typecheck            # web / server の 2 プロジェクト
+npm run format               # Prettier（設定は .prettierrc.json。VS Code の formatOnSave と同じ）
+npm run format:check
 npm run build                # dist/web（Vite）+ dist/server.js（esbuild、依存同梱）
 ```
+
+コードの書式は Prettier に任せています。VS Code は保存時に、Claude Code は編集のたびに（`.claude/settings.json` の PostToolUse フックで）同じ `.prettierrc.json` で整形するので、どちらが書いても差分が出ません。
 
 ディレクトリ構成は `src/domains`（zod スキーマ。型の正。サーバと Web が共有）、`src/api`（Web の API クライアント）、`src/components`、`src/pages`、`src/utils`、`src/server`（Hono。`domains` と `utils` だけを import する）です。
 

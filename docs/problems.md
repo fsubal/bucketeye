@@ -8,10 +8,10 @@ bucketeye の JSON API（`/api/v1`）はエラーを [RFC 9457](https://www.rfc-
 
 ## authentication-required
 
-| | |
-|---|---|
-| status | 401 |
-| title | Authentication required |
+|        |                         |
+| ------ | ----------------------- |
+| status | 401                     |
+| title  | Authentication required |
 
 リクエストに信頼できる身元がありません。前段のプロキシ（Google IAP / AWS ALB / Cloudflare Access / oauth2-proxy）を経由していないか、プロキシの設定（audience など）が合っていないか、`Authorization: Bearer` のトークンが `API_TOKENS` に含まれていません。
 
@@ -31,19 +31,19 @@ bucketeye の JSON API（`/api/v1`）はエラーを [RFC 9457](https://www.rfc-
 
 ## admin-required
 
-| | |
-|---|---|
-| status | 403 |
-| title | Admin privileges required |
+|        |                           |
+| ------ | ------------------------- |
+| status | 403                       |
+| title  | Admin privileges required |
 
 Webhook の管理や再索引など、admin だけができる操作です。`ADMIN_EMAILS` に自分のメールアドレスを追加してください。
 
 ## invalid-query
 
-| | |
-|---|---|
-| status | 400 |
-| title | Invalid query parameters |
+|        |                          |
+| ------ | ------------------------ |
+| status | 400                      |
+| title  | Invalid query parameters |
 
 クエリパラメータが不正です。
 
@@ -58,17 +58,20 @@ Webhook の管理や再索引など、admin だけができる操作です。`AD
   "status": 400,
   "detail": "status: Invalid option: expected one of \"pending\"|\"approved\"|\"changes_requested\"|\"rejected\"",
   "errors": [
-    { "detail": "Invalid option: expected one of \"pending\"|\"approved\"|\"changes_requested\"|\"rejected\"", "parameter": "status" }
+    {
+      "detail": "Invalid option: expected one of \"pending\"|\"approved\"|\"changes_requested\"|\"rejected\"",
+      "parameter": "status"
+    }
   ]
 }
 ```
 
 ## validation-failed
 
-| | |
-|---|---|
-| status | 422 |
-| title | Request body failed validation |
+|        |                                |
+| ------ | ------------------------------ |
+| status | 422                            |
+| title  | Request body failed validation |
 
 リクエスト本文（JSON）が不正です。
 
