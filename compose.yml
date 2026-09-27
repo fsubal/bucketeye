@@ -58,7 +58,7 @@ services:
       timeout: 3s
       retries: 30
 
-  # バケットを作り、script/sample/ の中身を submissions/ に投入する（アプリのコードは使わない）。
+  # バケットを作り、scripts/sample/ の中身を submissions/ に投入する（アプリのコードは使わない）。
   # aws s3 sync はサイズと更新時刻が同じファイルを送らないので、2 回目以降の起動でオブジェクトタグ（承認ステータス）を消さない
   seed:
     image: amazon/aws-cli:latest
@@ -68,7 +68,7 @@ services:
       AWS_DEFAULT_REGION: us-east-1
       AWS_ENDPOINT_URL: http://s3:9000
     volumes:
-      - ./script/sample:/sample:ro
+      - ./scripts/sample:/sample:ro
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |

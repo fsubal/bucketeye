@@ -17,7 +17,7 @@ docker compose up --build
 - http://localhost:3000 — アプリ。デモ用の `developer` 認証なので任意のメールでログインできます（`admin@example.com` が admin）
 - http://localhost:9001 — S3 互換ストレージ（RustFS）のコンソール（rustfsadmin / rustfsadmin）
 
-`script/sample/` の中身が `s3://manuscripts/submissions/` に投入され、起動時の再索引で一覧に出ます。詳細画面でコメントを書き、承認ボタンを押すと、ストレージ側のオブジェクトタグに `review-status=approved` が付きます:
+`scripts/sample/` の中身が `s3://manuscripts/submissions/` に投入され、起動時の再索引で一覧に出ます。詳細画面でコメントを書き、承認ボタンを押すと、ストレージ側のオブジェクトタグに `review-status=approved` が付きます:
 
 ```sh
 curl -s -H "Authorization: Bearer demo-admin-token" \
