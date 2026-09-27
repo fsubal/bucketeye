@@ -5,8 +5,8 @@ import { encodeKey, request, requestText } from '@/utils/http'
 
 export const IndexRun = z.object({
   id: z.number(),
-  started_at: z.string(),
-  finished_at: z.string().nullable(),
+  startedAt: z.string(),
+  finishedAt: z.string().nullable(),
   objects: z.number().nullable(),
   comments: z.number().nullable(),
   webhooks: z.number().nullable(),
@@ -23,15 +23,15 @@ export const ObjectList = z.object({
   pagination: z.object({ page: z.number(), per: z.number(), total: z.number() }),
   counts: z.partialRecord(ReviewStatus, z.number()),
   indexed: z.boolean(),
-  last_index_run: IndexRun.nullable(),
+  lastIndexRun: IndexRun.nullable(),
 })
 export type ObjectList = z.infer<typeof ObjectList>
 
 export const Preview = z.object({
   kind: ObjectKind,
-  download_url: z.string(),
+  downloadUrl: z.string(),
   url: z.string().optional(),
-  text_url: z.string().optional(),
+  textUrl: z.string().optional(),
 })
 export type Preview = z.infer<typeof Preview>
 

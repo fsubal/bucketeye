@@ -21,8 +21,8 @@ function toWebhook(row: WebhookRow): Webhook {
     secret: row.secret,
     active: row.active === 1,
     description: row.description,
-    created_by: row.created_by,
-    created_at: row.created_at,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
   })
 }
 
@@ -32,7 +32,7 @@ export function upsertWebhook(db: Db, w: Webhook, indexedAt: string): void {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT (id) DO UPDATE SET url = excluded.url, events = excluded.events, secret = excluded.secret, active = excluded.active,
        description = excluded.description, created_by = excluded.created_by, created_at = excluded.created_at, indexed_at = excluded.indexed_at`,
-  ).run(w.id, w.url, JSON.stringify(w.events), w.secret, w.active ? 1 : 0, w.description, w.created_by, w.created_at, indexedAt)
+  ).run(w.id, w.url, JSON.stringify(w.events), w.secret, w.active ? 1 : 0, w.description, w.createdBy, w.createdAt, indexedAt)
 }
 
 export function deleteWebhook(db: Db, id: string): void {

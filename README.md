@@ -6,7 +6,7 @@ S3 互換ストレージ（Amazon S3 / MinIO / RustFS / Ceph RGW / Google Cloud 
 - **認証は前段のプロキシに委譲。** Google IAP / AWS ALB 認証 / Cloudflare Access / oauth2-proxy が付ける身元をそのまま使います。ユーザーテーブルもログイン画面もありません。
 - **1 コンテナ。** Web UI、JSON API、S3 のポーリング、Webhook の配送が同じ Node.js プロセスで動きます（Hono + `node:sqlite` + React）。既存の docker-compose にサービスをひとつ足すだけで導入できます。
 
-Rails 版の PoC（[fsubal/s3review](https://github.com/fsubal/s3review)）を TypeScript で書き直したものです。S3 上のレイアウト（タグ名、サイドカーの場所と形式）は互換で、同じバケットをどちらでも読めます。
+Rails で作った PoC（[fsubal/s3review](https://github.com/fsubal/s3review)）を TypeScript で書き直したもので、こちらが本実装です。
 
 ## 試す
 
@@ -101,7 +101,11 @@ s3://<S3_BUCKET>/
 
 ## JSON API
 
-`Authorization: Bearer <API_TOKENS のいずれか>`、またはブラウザと同じ前段プロキシの身元で認証します。エラーは RFC 9457 の `application/problem+json` です。
+`Authorization: Bearer <API_TOKENS のいずれか>`、またはブラウザと同じ前段プロキシの身元で認証します。
+
+エラーは RFC 9457 の Problem Details（`application/problem+json`）です。汎用のエラーは `type: "about:blank"` と HTTP の標準フレーズの `title`、アプリ固有のエラー（認証が必要、admin が必要、入力の検証エラーなど）は固有の `type` URI を持ちます。種類と拡張メンバー（`errors`、`loginPath`）は [docs/problems.md](docs/problems.md) にあります。
+
+レスポンスのキーはすべて camelCase です（`contentType`、`statusUpdatedAt` など）。例外はコメントの W3C Web Annotation 形式で、キーは仕様どおり（`@context`、`conformsTo` など）です。ステータス値（`changes_requested`）やイベント名（`object.status_changed`）は値なので snake_case のままです。
 
 | メソッド | パス | 説明 |
 |---|---|---|
@@ -143,15 +147,15 @@ WEBHOOK_SECRET=<登録時に表示された secret> node scripts/webhook-receive
 {
   "id": "01M3ED...",
   "type": "object.status_changed",
-  "created_at": "2026-09-26T08:10:00Z",
+  "createdAt": "2026-09-26T08:10:00Z",
   "url": "https://review.example.com/objects/submissions/2026-10-issue/cover.png",
   "data": {
     "bucket": "manuscripts",
     "key": "submissions/2026-10-issue/cover.png",
     "status": "approved",
-    "previous_status": "pending",
+    "previousStatus": "pending",
     "reviewer": "alice@example.com",
-    "object": { "key": "...", "status": "approved", "content_type": "image/png", "...": "..." }
+    "object": { "key": "...", "status": "approved", "contentType": "image/png", "...": "..." }
   }
 }
 ```

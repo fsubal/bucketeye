@@ -31,13 +31,7 @@ export function webhooksRoutes() {
     const deps = c.get("deps");
     const input = WebhookInput.safeParse(await c.req.json().catch(() => ({})));
     if (!input.success)
-      throw new HttpProblem(
-        422,
-        "invalid_webhook",
-        input.error.issues
-          .map((i) => `${i.path.join(".")}: ${i.message}`)
-          .join("; "),
-      );
+      throw HttpProblem.validationFailed(input.error.issues);
     const secret = input.data.secret ?? randomBytes(24).toString("base64url");
     const webhook: Webhook = {
       id: generateUlid(),
@@ -46,8 +40,8 @@ export function webhooksRoutes() {
       secret,
       active: input.data.active ?? true,
       description: input.data.description ?? "",
-      created_by: c.get("identity").email,
-      created_at: toIso(new Date()),
+      createdBy: c.get("identity").email,
+      createdAt: toIso(new Date()),
     };
     await deps.webhookStore.save(webhook);
     upsertWebhook(deps.db, webhook, nowIso());
@@ -58,16 +52,12 @@ export function webhooksRoutes() {
   r.patch("/:id", async (c) => {
     const deps = c.get("deps");
     const existing = findWebhook(deps.db, c.req.param("id"));
-    if (!existing) throw new HttpProblem(404, "not_found");
+    if (!existing) throw HttpProblem.notFound();
     const input = WebhookInput.partial().safeParse(
       await c.req.json().catch(() => ({})),
     );
     if (!input.success)
-      throw new HttpProblem(
-        422,
-        "invalid_webhook",
-        input.error.issues.map((i) => i.message).join("; "),
-      );
+      throw HttpProblem.validationFailed(input.error.issues);
     const webhook: Webhook = {
       ...existing,
       ...input.data,
@@ -81,7 +71,7 @@ export function webhooksRoutes() {
   r.delete("/:id", async (c) => {
     const deps = c.get("deps");
     const id = c.req.param("id");
-    if (!findWebhook(deps.db, id)) throw new HttpProblem(404, "not_found");
+    if (!findWebhook(deps.db, id)) throw HttpProblem.notFound();
     await deps.webhookStore.remove(id);
     deleteWebhook(deps.db, id);
     return c.body(null, 204);
@@ -90,14 +80,14 @@ export function webhooksRoutes() {
   r.get("/:id/deliveries", (c) => {
     const deps = c.get("deps");
     const id = c.req.param("id");
-    if (!findWebhook(deps.db, id)) throw new HttpProblem(404, "not_found");
+    if (!findWebhook(deps.db, id)) throw HttpProblem.notFound();
     return c.json({ deliveries: listDeliveries(deps.db, id) });
   });
 
   r.post("/:id/ping", (c) => {
     const deps = c.get("deps");
     const id = c.req.param("id");
-    if (!findWebhook(deps.db, id)) throw new HttpProblem(404, "not_found");
+    if (!findWebhook(deps.db, id)) throw HttpProblem.notFound();
     return c.json({ event: deps.dispatcher.ping(id) }, 202);
   });
 

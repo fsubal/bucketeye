@@ -46,7 +46,7 @@ function WebhookRow({ webhook }: { webhook: WebhookPublic }) {
                 {e}
               </code>
             ))}
-            · secret {webhook.secret_hint} · {webhook.created_by} · {formatDate(webhook.created_at)}
+            · secret {webhook.secretHint} · {webhook.createdBy} · {formatDate(webhook.createdAt)}
             {!webhook.active && <span className="ml-2 rounded bg-gray-200 px-1.5 text-gray-700">無効</span>}
           </p>
           {webhook.description && <p className="mt-1 text-gray-700">{webhook.description}</p>}
@@ -94,24 +94,24 @@ function WebhookRow({ webhook }: { webhook: WebhookPublic }) {
             {deliveries.data?.map((d) => (
               <tr key={d.id} className="border-t border-gray-100">
                 <td className="py-1">
-                  <code>{d.event_type}</code>
+                  <code>{d.eventType}</code>
                 </td>
                 <td className="py-1">{d.attempts}</td>
                 <td className="py-1">
-                  {d.delivered_at ? (
-                    <span className="text-green-700">配送済 ({d.last_status})</span>
-                  ) : d.dead_at ? (
-                    <span className="text-red-700" title={d.last_error ?? ''}>
-                      断念 ({d.last_error})
+                  {d.deliveredAt ? (
+                    <span className="text-green-700">配送済 ({d.lastStatus})</span>
+                  ) : d.deadAt ? (
+                    <span className="text-red-700" title={d.lastError ?? ''}>
+                      断念 ({d.lastError})
                     </span>
                   ) : (
-                    <span className="text-amber-700" title={d.last_error ?? ''}>
-                      {d.attempts === 0 ? '待機中' : `再送待ち (${d.last_error})`}
+                    <span className="text-amber-700" title={d.lastError ?? ''}>
+                      {d.attempts === 0 ? '待機中' : `再送待ち (${d.lastError})`}
                     </span>
                   )}
                 </td>
-                <td className="py-1">{formatDate(d.next_attempt_at)}</td>
-                <td className="py-1">{formatDate(d.created_at)}</td>
+                <td className="py-1">{formatDate(d.nextAttemptAt)}</td>
+                <td className="py-1">{formatDate(d.createdAt)}</td>
               </tr>
             ))}
           </tbody>

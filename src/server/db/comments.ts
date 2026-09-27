@@ -24,11 +24,11 @@ function toComment(row: CommentRow): Comment {
     : null;
   return {
     id: row.ulid,
-    author_email: row.author_email,
-    author_name: row.author_name,
+    authorEmail: row.author_email,
+    authorName: row.author_name,
     body: row.body,
     selector: parsed?.success ? parsed.data : null,
-    created_at: row.created_at,
+    createdAt: row.created_at,
   };
 }
 
@@ -48,11 +48,11 @@ export function upsertComment(
     ulidOf(annotation),
     bucket,
     key,
-    c.author_email,
-    c.author_name,
+    c.authorEmail,
+    c.authorName,
     c.body,
     c.selector ? JSON.stringify(c.selector) : null,
-    c.created_at,
+    c.createdAt,
   );
   return c;
 }

@@ -40,12 +40,12 @@ describe('WebhookWorker', () => {
     expect(payload).toMatchObject({
       type: 'object.status_changed',
       url: 'https://review.example.com/objects/submissions/a.png',
-      data: { key: 'submissions/a.png', status: 'approved', previous_status: 'pending', reviewer: 'reviewer@example.com' },
+      data: { key: 'submissions/a.png', status: 'approved', previousStatus: 'pending', reviewer: 'reviewer@example.com' },
     })
 
     const deliveries = await (await t.app.request(`/api/v1/webhooks/${webhook.id}/deliveries`, { headers: await signIn(t.app, 'admin@example.com') })).json() as any
-    expect(deliveries.deliveries[0]).toMatchObject({ attempts: 1, last_status: 200, dead_at: null })
-    expect(deliveries.deliveries[0].delivered_at).not.toBeNull()
+    expect(deliveries.deliveries[0]).toMatchObject({ attempts: 1, lastStatus: 200, deadAt: null })
+    expect(deliveries.deliveries[0].deliveredAt).not.toBeNull()
     // 2 回目の tick では何も配送しない
     expect(await worker.tick()).toBe(0)
   })
@@ -95,7 +95,7 @@ describe('WebhookWorker', () => {
     const list = await (await t.app.request('/api/v1/webhooks', { headers: admin })).json() as any
     expect(list.webhooks).toHaveLength(1)
     expect(list.webhooks[0].secret).toBeUndefined()
-    expect(list.webhooks[0].secret_hint).toMatch(/…$/)
+    expect(list.webhooks[0].secretHint).toMatch(/…$/)
 
     expect((await t.app.request(`/api/v1/webhooks/${webhook.id}`, { method: 'DELETE', headers: admin })).status).toBe(204)
     expect(t.s3.keysIn('test-bucket').some((k) => k.startsWith('.review/webhooks/'))).toBe(false)

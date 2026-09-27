@@ -24,7 +24,14 @@ export class WebhookStore {
     })) {
       if (!entry.key.endsWith(".json")) continue;
       const parsed = Webhook.safeParse(await this.s3.getJson(entry.key));
-      if (parsed.success) yield parsed.data;
+      if (parsed.success) {
+        yield parsed.data;
+      } else {
+        // 旧形式（created_by など snake_case のキー）や壊れた JSON は読み飛ばすが、黙って消えないようにログを出す
+        console.warn(
+          `[webhooks] skipped invalid registration ${entry.key}: ${parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`,
+        );
+      }
     }
   }
 }

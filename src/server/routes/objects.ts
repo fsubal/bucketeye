@@ -28,7 +28,7 @@ const ListQuery = z.object({
   status: ReviewStatus.optional(),
   page: z.coerce.number().int().min(1).default(1),
   per: z.coerce.number().int().min(1).max(MAX_PER).default(DEFAULT_PER),
-  updated_since: z.string().optional(),
+  updatedSince: z.string().optional(),
 });
 
 const CommentInput = z.object({
@@ -45,13 +45,7 @@ export function objectsRoutes() {
     const { config, db, s3 } = c.get("deps");
     const q = ListQuery.safeParse(c.req.query());
     if (!q.success)
-      throw new HttpProblem(
-        400,
-        "invalid_query",
-        q.error.issues
-          .map((i) => `${i.path.join(".")}: ${i.message}`)
-          .join("; "),
-      );
+      throw HttpProblem.invalidQuery(q.error.issues);
     const relativePrefix = normalizePrefix(q.data.prefix);
     const fullPrefix = config.s3.targetPrefix + relativePrefix;
     const status = q.data.status ?? null;
@@ -64,16 +58,14 @@ export function objectsRoutes() {
     };
     const total = countObjects(db, opts);
     let objects = listObjects(db, opts).map(toReviewedObject);
-    if (q.data.updated_since) {
-      const since = new Date(q.data.updated_since);
+    if (q.data.updatedSince) {
+      const since = new Date(q.data.updatedSince);
       if (Number.isNaN(since.getTime()))
-        throw new HttpProblem(
-          400,
-          "invalid_query",
-          "updated_since must be ISO8601",
-        );
+        throw HttpProblem.invalidQuery([
+          { path: ["updatedSince"], message: "must be an ISO 8601 date-time" },
+        ]);
       objects = objects.filter(
-        (o) => o.status_updated_at && new Date(o.status_updated_at) >= since,
+        (o) => o.statusUpdatedAt && new Date(o.statusUpdatedAt) >= since,
       );
     }
     return c.json({
@@ -85,7 +77,7 @@ export function objectsRoutes() {
       pagination: { page: q.data.page, per: q.data.per, total },
       counts: countByStatus(db, s3.bucket, fullPrefix),
       indexed: hasAnyObject(db, s3.bucket),
-      last_index_run: lastIndexRun(db),
+      lastIndexRun: lastIndexRun(db),
     });
   });
 
@@ -94,11 +86,11 @@ export function objectsRoutes() {
     const deps = c.get("deps");
     const key = targetKey(c, "/api/v1/objects/");
     const object = await syncObject(deps, key);
-    if (!object) throw new HttpProblem(404, "not_found");
+    if (!object) throw HttpProblem.notFound();
     const comments = await syncComments(deps, key);
     const preview: Record<string, unknown> = {
       kind: object.kind,
-      download_url: await deps.s3.presign(key, { inline: false }),
+      downloadUrl: await deps.s3.presign(key, { inline: false }),
     };
     if (
       object.kind === "image" ||
@@ -111,7 +103,7 @@ export function objectsRoutes() {
         contentType: "application/pdf",
       });
     if (object.kind === "text")
-      preview["text_url"] = `/api/v1/texts/${encodeURI(key)}`;
+      preview["textUrl"] = `/api/v1/texts/${encodeURI(key)}`;
     return c.json({ object, comments, preview });
   });
 
@@ -129,7 +121,7 @@ export function textsRoutes() {
     const { s3, db } = c.get("deps");
     const key = targetKey(c, "/api/v1/texts/");
     const bytes = await s3.readHead(key, TEXT_PREVIEW_BYTES);
-    if (bytes === null) throw new HttpProblem(404, "not_found");
+    if (bytes === null) throw HttpProblem.notFound();
     const object = findObject(db, s3.bucket, key);
     c.header(
       "X-Truncated",
@@ -148,7 +140,7 @@ export function commentsRoutes() {
     const deps = c.get("deps");
     const key = targetKey(c, "/api/v1/comments/");
     if (!(await findOrSyncObject(deps, key)))
-      throw new HttpProblem(404, "not_found");
+      throw HttpProblem.notFound();
     return c.json({ comments: await syncComments(deps, key) });
   });
 
@@ -158,13 +150,9 @@ export function commentsRoutes() {
     const key = targetKey(c, "/api/v1/comments/");
     const input = CommentInput.safeParse(await c.req.json().catch(() => ({})));
     if (!input.success)
-      throw new HttpProblem(
-        422,
-        "invalid_comment",
-        input.error.issues.map((i) => i.message).join("; "),
-      );
+      throw HttpProblem.validationFailed(input.error.issues);
     const object = await findOrSyncObject(deps, key);
-    if (!object) throw new HttpProblem(404, "not_found");
+    if (!object) throw HttpProblem.notFound();
 
     // S3 に書いてから SQLite に写す（S3 が真実）
     const annotation = await deps.commentStore.append(key, {
@@ -193,13 +181,9 @@ export function statusesRoutes() {
     const key = targetKey(c, "/api/v1/statuses/");
     const input = StatusInput.safeParse(await c.req.json().catch(() => ({})));
     if (!input.success)
-      throw new HttpProblem(
-        422,
-        "invalid_status",
-        input.error.issues.map((i) => i.message).join("; "),
-      );
+      throw HttpProblem.validationFailed(input.error.issues);
     const before = await findOrSyncObject(deps, key);
-    if (!before) throw new HttpProblem(404, "not_found");
+    if (!before) throw HttpProblem.notFound();
 
     const identity = c.get("identity");
     const written = await deps.statusStore.write(
@@ -215,7 +199,7 @@ export function statusesRoutes() {
     const object = {
       ...before,
       status: written.status,
-      status_updated_at: written.updatedAt,
+      statusUpdatedAt: written.updatedAt,
       reviewer: written.reviewer,
     };
     if (before.status !== written.status) {
@@ -226,7 +210,7 @@ export function statusesRoutes() {
           bucket: deps.s3.bucket,
           key,
           status: written.status,
-          previous_status: before.status,
+          previousStatus: before.status,
           reviewer: identity.email,
           object,
         },
@@ -245,6 +229,6 @@ function targetKey(c: Context<AppEnv>, base: string): string {
     ? decodeURIComponent(path.slice(base.length))
     : "";
   if (!isTargetKey(c.get("deps").config, key))
-    throw new HttpProblem(404, "not_found", "key is outside TARGET_PREFIX");
+    throw HttpProblem.notFound("key is outside TARGET_PREFIX");
   return key;
 }

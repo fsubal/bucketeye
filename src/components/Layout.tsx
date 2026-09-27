@@ -26,7 +26,7 @@ export function Layout({ me, children }: { me: Me | null; children: ReactNode })
             </Link>
             {config.data && (
               <span className="text-sm text-gray-500">
-                s3://{config.data.bucket}/{config.data.target_prefix}
+                s3://{config.data.bucket}/{config.data.targetPrefix}
               </span>
             )}
           </div>

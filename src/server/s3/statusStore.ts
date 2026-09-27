@@ -1,9 +1,10 @@
-import { toIso } from "@/domains/Annotation/model";
+import { z } from "zod";
+import { sourceFor, toIso } from "@/domains/Annotation/model";
 import {
   DEFAULT_STATUS,
   REVIEW_STATUSES,
+  ReviewStatus,
   STATUS_TAGS,
-  type ReviewStatus,
 } from "@/domains/ReviewedObject/model";
 import type { S3Port } from "./port";
 import { statusSidecarKey } from "./keys";
@@ -69,6 +70,17 @@ export class TagStatusStore implements StatusStore {
   }
 }
 
+/**
+ * status.json の中身。読み込みは寛容にしておく（不正な値や欠けたキーは pending / null として扱い、索引を止めない）
+ */
+export const StatusSidecar = z.object({
+  source: z.string().optional(),
+  status: ReviewStatus.catch(DEFAULT_STATUS),
+  updatedAt: z.string().nullable().catch(null),
+  reviewer: z.string().nullable().catch(null),
+});
+export type StatusSidecar = z.infer<typeof StatusSidecar>;
+
 /** タグのない GCS などの逃げ道: <REVIEW_PREFIX>objects/<sha256(key)>/status.json */
 export class SidecarStatusStore implements StatusStore {
   constructor(
@@ -77,16 +89,14 @@ export class SidecarStatusStore implements StatusStore {
   ) {}
 
   async read(key: string): Promise<StatusRecord | null> {
-    const json = (await this.s3.getJson(
+    const json = await this.s3.getJson(
       statusSidecarKey(this.reviewPrefix, key),
-    )) as Record<string, unknown> | null;
-    if (!json) return PENDING;
-    return {
-      status: coerceStatus(json["status"]),
-      updatedAt:
-        typeof json["updated_at"] === "string" ? json["updated_at"] : null,
-      reviewer: typeof json["reviewer"] === "string" ? json["reviewer"] : null,
-    };
+    );
+    if (json === null) return PENDING;
+    const parsed = StatusSidecar.safeParse(json);
+    if (!parsed.success) return PENDING;
+    const { status, updatedAt, reviewer } = parsed.data;
+    return { status, updatedAt, reviewer };
   }
 
   async write(
@@ -96,12 +106,13 @@ export class SidecarStatusStore implements StatusStore {
     now = new Date(),
   ): Promise<StatusRecord> {
     const updatedAt = toIso(now);
-    await this.s3.putJson(statusSidecarKey(this.reviewPrefix, key), {
-      source: `s3://${this.s3.bucket}/${key}`,
+    const sidecar: StatusSidecar = {
+      source: sourceFor(this.s3.bucket, key),
       status,
-      updated_at: updatedAt,
+      updatedAt,
       reviewer,
-    });
+    };
+    await this.s3.putJson(statusSidecarKey(this.reviewPrefix, key), sidecar);
     return { status, updatedAt, reviewer };
   }
 }

@@ -1,7 +1,35 @@
 import type { Db } from './database'
 import { MAX_ATTEMPTS, RETRY_SCHEDULE_SECONDS, type Delivery, type WebhookEvent } from '@/domains/Webhook/model'
 
-export type DeliveryRow = Delivery & { payload: string }
+/** webhook_deliveries の行（列名は snake_case のまま）。API に出すときは toDelivery で camelCase にする */
+export type DeliveryRow = {
+  id: string
+  webhook_id: string
+  event_type: string
+  payload: string
+  attempts: number
+  next_attempt_at: string | null
+  last_status: number | null
+  last_error: string | null
+  delivered_at: string | null
+  dead_at: string | null
+  created_at: string
+}
+
+export function toDelivery(row: DeliveryRow): Delivery {
+  return {
+    id: row.id,
+    webhookId: row.webhook_id,
+    eventType: row.event_type,
+    attempts: row.attempts,
+    nextAttemptAt: row.next_attempt_at,
+    lastStatus: row.last_status,
+    lastError: row.last_error,
+    deliveredAt: row.delivered_at,
+    deadAt: row.dead_at,
+    createdAt: row.created_at,
+  }
+}
 
 export function enqueueDelivery(db: Db, id: string, webhookId: string, event: WebhookEvent): void {
   const now = new Date().toISOString()
@@ -52,5 +80,5 @@ export function listDeliveries(db: Db, webhookId: string, limit = 50): Delivery[
   const rows = db
     .prepare('SELECT * FROM webhook_deliveries WHERE webhook_id = ? ORDER BY created_at DESC LIMIT ?')
     .all(webhookId, limit) as DeliveryRow[]
-  return rows.map(({ payload: _payload, ...rest }) => rest)
+  return rows.map(toDelivery)
 }

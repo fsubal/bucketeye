@@ -5,13 +5,13 @@ import { request } from '@/utils/http'
 export const Me = z.object({
   identity: Identity,
   provider: z.record(z.string(), z.unknown()),
-  login_path: z.string().nullable(),
-  admin_emails_configured: z.boolean(),
-  headers_present: z.array(z.string()),
+  loginPath: z.string().nullable(),
+  adminEmailsConfigured: z.boolean(),
+  headersPresent: z.array(z.string()),
 })
 export type Me = z.infer<typeof Me>
 
-export const AppConfig = z.object({ bucket: z.string(), target_prefix: z.string(), status_strategy: z.enum(['tags', 'sidecar']) })
+export const AppConfig = z.object({ bucket: z.string(), targetPrefix: z.string(), statusStrategy: z.enum(['tags', 'sidecar']) })
 export type AppConfig = z.infer<typeof AppConfig>
 
 export function getMe(): Promise<Me> {

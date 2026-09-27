@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { breadcrumbsOf, kindOf, nameOf, normalizePrefix, parentPrefixOf } from './model'
 
 describe('ReviewedObject', () => {
-  test('kindOf は content_type から大分類を決める', () => {
+  test('kindOf は contentType から大分類を決める', () => {
     expect(kindOf('image/png')).toBe('image')
     expect(kindOf('video/mp4')).toBe('video')
     expect(kindOf('application/pdf')).toBe('pdf')

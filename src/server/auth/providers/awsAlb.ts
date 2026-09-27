@@ -21,6 +21,6 @@ export class AwsAlbProvider extends JwtProvider {
   }
 
   override describe() {
-    return { ...super.describe(), region: this.region, alb_arn: this.arn ?? null }
+    return { ...super.describe(), region: this.region, albArn: this.arn ?? null }
   }
 }

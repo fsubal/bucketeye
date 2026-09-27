@@ -28,7 +28,7 @@ export function StatusForm({ object }: { object: ReviewedObject }) {
         <StatusBadge status={object.status} />
         {object.reviewer && (
           <span className="text-gray-500">
-            {object.reviewer} · {formatDate(object.status_updated_at)}
+            {object.reviewer} · {formatDate(object.statusUpdatedAt)}
           </span>
         )}
       </div>

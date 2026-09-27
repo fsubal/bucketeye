@@ -15,7 +15,7 @@ export default function WhoamiShow({ me }: { me: Me }) {
             <dt className="text-gray-500">role</dt>
             <dd>
               {me.identity.role}
-              {!me.admin_emails_configured && <span className="ml-2 text-xs text-amber-700">ADMIN_EMAILS が未設定のため admin はいません</span>}
+              {!me.adminEmailsConfigured && <span className="ml-2 text-xs text-amber-700">ADMIN_EMAILS が未設定のため admin はいません</span>}
             </dd>
           </dl>
         </section>
@@ -30,11 +30,11 @@ export default function WhoamiShow({ me }: { me: Me }) {
             ))}
           </dl>
           <h3 className="mt-4 mb-1 font-semibold text-gray-700">届いている認証ヘッダ</h3>
-          {me.headers_present.length === 0 ? (
+          {me.headersPresent.length === 0 ? (
             <p className="text-gray-500">なし</p>
           ) : (
             <ul className="list-disc pl-5">
-              {me.headers_present.map((h) => (
+              {me.headersPresent.map((h) => (
                 <li key={h}>
                   <code>{h}</code>
                 </li>

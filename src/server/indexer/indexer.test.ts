@@ -16,7 +16,7 @@ describe('runIndex', () => {
     await t.statusStore.write('submissions/a/cover.png', 'approved', 'alice@example.com')
     await t.commentStore.append('submissions/a/cover.png', { body: 'hi', creator: identity() })
     await t.commentStore.append('submissions/readme.txt', { body: 'text comment', creator: identity() })
-    await t.webhookStore.save({ id: 'W1', url: 'https://h.example/', events: ['comment.created'], secret: 'x'.repeat(16), active: true, description: '', created_by: 'a', created_at: '2026-01-01T00:00:00Z' })
+    await t.webhookStore.save({ id: 'W1', url: 'https://h.example/', events: ['comment.created'], secret: 'x'.repeat(16), active: true, description: '', createdBy: 'a', createdAt: '2026-01-01T00:00:00Z' })
     t.db.prepare("INSERT INTO objects (bucket, key, indexed_at) VALUES ('test-bucket', 'submissions/gone.txt', '2000-01-01T00:00:00Z')").run()
 
     const r = await runIndex(t)

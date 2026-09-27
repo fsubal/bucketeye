@@ -103,22 +103,22 @@ export function toIso(date: Date): string {
 /** API / UI 向けの平たい形 */
 export const Comment = z.object({
   id: z.string(),
-  author_email: z.string(),
-  author_name: z.string().nullable(),
+  authorEmail: z.string(),
+  authorName: z.string().nullable(),
   body: z.string(),
   selector: Selector.nullable(),
-  created_at: z.string(),
+  createdAt: z.string(),
 });
 export type Comment = z.infer<typeof Comment>;
 
 export function commentOf(annotation: Annotation): Comment {
   return {
     id: ulidOf(annotation),
-    author_email: annotation.creator.email,
-    author_name: annotation.creator.name ?? null,
+    authorEmail: annotation.creator.email,
+    authorName: annotation.creator.name ?? null,
     body: annotation.body.value,
     selector: annotation.target.selector ?? null,
-    created_at: annotation.created,
+    createdAt: annotation.created,
   };
 }
 

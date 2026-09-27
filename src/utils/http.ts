@@ -1,35 +1,42 @@
 import type { z } from "zod";
+import { Problem, type ProblemTypeName, isProblemType } from "@/domains/Problem/model";
 
 /** RFC 9457 Problem Details をそのまま持つエラー。/api 以下の関数はこれを投げる */
 export class HttpError extends Error {
   constructor(
     readonly status: number,
-    readonly title: string,
-    readonly detail: string | undefined,
-    readonly extra: Record<string, unknown> = {},
+    readonly problem: Problem,
   ) {
-    super(detail ?? title);
+    super(problem.detail ?? problem.title ?? `HTTP ${status}`);
   }
+
   get loginPath(): string | null {
-    return typeof this.extra["login_path"] === "string"
-      ? (this.extra["login_path"] as string)
-      : null;
+    return this.problem.loginPath ?? null;
+  }
+
+  /** validation-failed / invalid-query のときのフィールドごとのエラー */
+  get errors(): NonNullable<Problem["errors"]> {
+    return this.problem.errors ?? [];
+  }
+
+  is(name: ProblemTypeName): boolean {
+    return isProblemType(this.problem, name);
   }
 }
 
 async function throwProblem(res: Response): Promise<never> {
-  let body: Record<string, unknown> = {};
+  let body: unknown = null;
   try {
-    body = (await res.json()) as Record<string, unknown>;
+    body = await res.json();
   } catch {
-    /* not JSON */
+    /* not JSON（プロキシのエラーページなど） */
   }
-  const { title, detail, status: _s, type: _t, ...extra } = body;
+  const parsed = Problem.safeParse(body);
   throw new HttpError(
     res.status,
-    typeof title === "string" ? title : res.statusText,
-    typeof detail === "string" ? detail : undefined,
-    extra,
+    parsed.success
+      ? parsed.data
+      : { type: "about:blank", title: res.statusText, status: res.status },
   );
 }
 

@@ -22,15 +22,15 @@ export function meRoutes() {
     return c.json({
       identity: c.get('identity'),
       provider: auth.describe(),
-      login_path: auth.loginPath,
-      admin_emails_configured: config.auth.adminEmails.length > 0,
-      headers_present: AUTH_HEADERS.filter((h) => c.req.header(h) !== undefined),
+      loginPath: auth.loginPath,
+      adminEmailsConfigured: config.auth.adminEmails.length > 0,
+      headersPresent: AUTH_HEADERS.filter((h) => c.req.header(h) !== undefined),
     })
   })
 
   r.get('/config', (c) => {
     const { config } = c.get('deps')
-    return c.json({ bucket: config.s3.bucket, target_prefix: config.s3.targetPrefix, status_strategy: config.s3.statusStrategy })
+    return c.json({ bucket: config.s3.bucket, targetPrefix: config.s3.targetPrefix, statusStrategy: config.s3.statusStrategy })
   })
 
   return r

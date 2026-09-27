@@ -10,7 +10,7 @@ import type { CommentStore } from "./s3/commentStore";
 import type { WebhookStore } from "./s3/webhookStore";
 import type { Dispatcher } from "./webhooks/dispatcher";
 import type { Poller } from "./indexer/poller";
-import { HttpProblem, problem } from "./routes/problem";
+import { HttpProblem, problemResponse } from "./routes/problem";
 import {
   commentsRoutes,
   objectsRoutes,
@@ -51,17 +51,13 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
     await next();
   });
   api.onError((err, c) => {
-    if (err instanceof HttpProblem)
-      return problem(c, err.status, err.title, err.detail);
+    if (err instanceof HttpProblem) return problemResponse(c, err);
     console.error(err);
-    return problem(
+    return problemResponse(
       c,
-      500,
-      "internal_error",
-      deps.config.production ? undefined : String(err),
+      HttpProblem.status(500, deps.config.production ? undefined : String(err)),
     );
   });
-  api.notFound((c) => problem(c, 404, "not_found"));
 
   // 開発用ログインだけは未認証で叩ける
   if (deps.auth instanceof DeveloperProvider)
@@ -77,5 +73,8 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   api.route("/admin", adminRoutes());
 
   app.route("/api/v1", api);
+  // サブアプリの notFound はマウント先では使われないので、存在しない API パスは親で problem+json の 404 にする
+  // （この後に mountStatic が SPA のフォールバックを足すので、それに吸われないよう先に定義しておく）
+  app.all("/api/*", (c) => problemResponse(c, HttpProblem.notFound()));
   return app;
 }

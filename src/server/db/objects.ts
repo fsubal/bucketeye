@@ -23,13 +23,13 @@ export function toReviewedObject(row: ObjectRow): ReviewedObject {
     name: nameOf(row.key),
     etag: row.etag,
     size: row.size,
-    content_type: row.content_type,
+    contentType: row.content_type,
     kind: kindOf(row.content_type),
-    last_modified: row.last_modified,
+    lastModified: row.last_modified,
     status: row.status,
-    status_updated_at: row.status_updated_at,
+    statusUpdatedAt: row.status_updated_at,
     reviewer: row.reviewer,
-    indexed_at: row.indexed_at,
+    indexedAt: row.indexed_at,
   }
 }
 

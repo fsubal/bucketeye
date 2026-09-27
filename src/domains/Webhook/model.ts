@@ -14,18 +14,18 @@ export const Webhook = z.object({
   secret: z.string().min(16),
   active: z.boolean(),
   description: z.string().default(''),
-  created_by: z.string(),
-  created_at: z.string(),
+  createdBy: z.string(),
+  createdAt: z.string(),
 })
 export type Webhook = z.infer<typeof Webhook>
 
 /** API が返す形（secret は先頭だけ） */
-export const WebhookPublic = Webhook.omit({ secret: true }).extend({ secret_hint: z.string() })
+export const WebhookPublic = Webhook.omit({ secret: true }).extend({ secretHint: z.string() })
 export type WebhookPublic = z.infer<typeof WebhookPublic>
 
 export function publicWebhook(w: Webhook): WebhookPublic {
   const { secret, ...rest } = w
-  return { ...rest, secret_hint: `${secret.slice(0, 4)}…` }
+  return { ...rest, secretHint: `${secret.slice(0, 4)}…` }
 }
 
 export const WebhookInput = z.object({
@@ -43,13 +43,13 @@ export const WebhookEvent = z.discriminatedUnion('type', [
   z.object({
     id: z.string(),
     type: z.literal('object.status_changed'),
-    created_at: z.string(),
+    createdAt: z.string(),
     url: z.string().nullable(),
     data: z.object({
       bucket: z.string(),
       key: z.string(),
       status: ReviewStatus,
-      previous_status: ReviewStatus,
+      previousStatus: ReviewStatus,
       reviewer: z.string(),
       object: ReviewedObject,
     }),
@@ -57,7 +57,7 @@ export const WebhookEvent = z.discriminatedUnion('type', [
   z.object({
     id: z.string(),
     type: z.literal('comment.created'),
-    created_at: z.string(),
+    createdAt: z.string(),
     url: z.string().nullable(),
     data: z.object({
       bucket: z.string(),
@@ -69,9 +69,9 @@ export const WebhookEvent = z.discriminatedUnion('type', [
   z.object({
     id: z.string(),
     type: z.literal('ping'),
-    created_at: z.string(),
+    createdAt: z.string(),
     url: z.string().nullable(),
-    data: z.object({ webhook_id: z.string(), message: z.string() }),
+    data: z.object({ webhookId: z.string(), message: z.string() }),
   }),
 ])
 export type WebhookEvent = z.infer<typeof WebhookEvent>
@@ -86,14 +86,14 @@ export const MAX_ATTEMPTS = RETRY_SCHEDULE_SECONDS.length
 
 export const Delivery = z.object({
   id: z.string(),
-  webhook_id: z.string(),
-  event_type: z.string(),
+  webhookId: z.string(),
+  eventType: z.string(),
   attempts: z.number().int(),
-  next_attempt_at: z.string().nullable(),
-  last_status: z.number().int().nullable(),
-  last_error: z.string().nullable(),
-  delivered_at: z.string().nullable(),
-  dead_at: z.string().nullable(),
-  created_at: z.string(),
+  nextAttemptAt: z.string().nullable(),
+  lastStatus: z.number().int().nullable(),
+  lastError: z.string().nullable(),
+  deliveredAt: z.string().nullable(),
+  deadAt: z.string().nullable(),
+  createdAt: z.string(),
 })
 export type Delivery = z.infer<typeof Delivery>

@@ -60,13 +60,13 @@ export const ReviewedObject = z.object({
   name: z.string(),
   etag: z.string().nullable(),
   size: z.number().int().nullable(),
-  content_type: z.string().nullable(),
+  contentType: z.string().nullable(),
   kind: ObjectKind,
-  last_modified: z.string().nullable(),
+  lastModified: z.string().nullable(),
   status: ReviewStatus,
-  status_updated_at: z.string().nullable(),
+  statusUpdatedAt: z.string().nullable(),
   reviewer: z.string().nullable(),
-  indexed_at: z.string().nullable(),
+  indexedAt: z.string().nullable(),
 });
 export type ReviewedObject = z.infer<typeof ReviewedObject>;
 

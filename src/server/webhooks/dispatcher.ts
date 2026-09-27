@@ -22,7 +22,7 @@ export class Dispatcher {
     const event = {
       id: generateUlid(),
       type: input.type,
-      created_at: toIso(new Date()),
+      createdAt: toIso(new Date()),
       url:
         this.publicUrl && input.key
           ? `${this.publicUrl}/objects/${encodeURI(input.key)}`
@@ -42,10 +42,10 @@ export class Dispatcher {
     const event: WebhookEvent = {
       id: generateUlid(),
       type: "ping",
-      created_at: toIso(new Date()),
+      createdAt: toIso(new Date()),
       url: this.publicUrl,
       data: {
-        webhook_id: webhookId,
+        webhookId,
         message: "bucketeye webhook test delivery",
       },
     };

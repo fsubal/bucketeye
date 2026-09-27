@@ -22,8 +22,8 @@ export class ForwardedHeaderProvider implements AuthProvider {
   describe() {
     return {
       provider: this.name,
-      email_header: this.opts.emailHeader,
-      name_header: this.opts.nameHeader,
+      emailHeader: this.opts.emailHeader,
+      nameHeader: this.opts.nameHeader,
       warning: 'headers are not signed; restrict network access to the proxy',
     }
   }

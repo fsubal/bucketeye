@@ -54,10 +54,10 @@ export default function ObjectsIndex({ me }: { me: Me }) {
           ))}
         </nav>
         <div className="flex items-center gap-2 text-xs text-gray-500">
-          {data.last_index_run && (
-            <span title={data.last_index_run.error ?? undefined}>
-              最終索引: {formatDate(data.last_index_run.finished_at ?? data.last_index_run.started_at)}
-              {data.last_index_run.error && <span className="ml-1 text-red-600">（失敗）</span>}
+          {data.lastIndexRun && (
+            <span title={data.lastIndexRun.error ?? undefined}>
+              最終索引: {formatDate(data.lastIndexRun.finishedAt ?? data.lastIndexRun.startedAt)}
+              {data.lastIndexRun.error && <span className="ml-1 text-red-600">（失敗）</span>}
             </span>
           )}
           {me.identity.role === 'admin' && (
@@ -116,9 +116,9 @@ export default function ObjectsIndex({ me }: { me: Me }) {
               <td className="px-3 py-2">
                 <StatusBadge status={o.status} />
               </td>
-              <td className="px-3 py-2 text-gray-600">{o.content_type ?? '-'}</td>
+              <td className="px-3 py-2 text-gray-600">{o.contentType ?? '-'}</td>
               <td className="px-3 py-2 text-right text-gray-600">{formatBytes(o.size)}</td>
-              <td className="px-3 py-2 text-gray-600">{formatDate(o.last_modified)}</td>
+              <td className="px-3 py-2 text-gray-600">{formatDate(o.lastModified)}</td>
             </tr>
           ))}
           {data.folders.length === 0 && data.objects.length === 0 && (

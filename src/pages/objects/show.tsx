@@ -35,10 +35,10 @@ export default function ObjectsShow() {
         <div>
           <h1 className="text-xl font-semibold break-all">{object.name}</h1>
           <p className="mt-1 text-xs text-gray-500">
-            {object.content_type ?? '不明'} · {formatBytes(object.size)} · 更新 {formatDate(object.last_modified)} · ETag {object.etag}
+            {object.contentType ?? '不明'} · {formatBytes(object.size)} · 更新 {formatDate(object.lastModified)} · ETag {object.etag}
           </p>
         </div>
-        <a href={preview.download_url} className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-100">
+        <a href={preview.downloadUrl} className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-100">
           ダウンロード
         </a>
       </div>

@@ -8,7 +8,7 @@ describe('Annotation', () => {
     expect(a['@context']).toBe('http://www.w3.org/ns/anno.jsonld')
     expect(a.target).toEqual({ source: 's3://b/k/x.png' }) // MVP は selector なし
     expect(parseSource(a.target.source)).toEqual({ bucket: 'b', key: 'k/x.png' })
-    expect(commentOf(a)).toMatchObject({ id: ulidOf(a), author_email: 'a@example.com', body: 'hi', selector: null })
+    expect(commentOf(a)).toMatchObject({ id: ulidOf(a), authorEmail: 'a@example.com', body: 'hi', selector: null })
   })
 
   test('selector 付きも受理し、不正な selector は拒否する', () => {

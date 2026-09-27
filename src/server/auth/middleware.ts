@@ -2,7 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import type { MiddlewareHandler } from "hono";
 import type { Identity } from "@/domains/Identity/model";
 import type { AuthProvider } from "./provider";
-import { problem } from "../routes/problem";
+import { HttpProblem, problemResponse } from "../routes/problem";
 
 export type AuthEnv = { Variables: { identity: Identity } };
 
@@ -18,7 +18,7 @@ function validToken(candidates: readonly string[], token: string): boolean {
  * 認証ミドルウェア。順に:
  *   1. Authorization: Bearer <API_TOKENS のいずれか> → サーバ間連携用の身元
  *   2. 前段プロキシの身元（AuthProvider）
- *   3. どちらも無ければ 401（problem+json）。login_path があれば UI 側がそこへ誘導する
+ *   3. どちらも無ければ 401（problem+json）。loginPath があれば UI 側がそこへ誘導する
  */
 export function authenticate(
   provider: AuthProvider,
@@ -42,12 +42,12 @@ export function authenticate(
       identity = await provider.identify(c);
     }
     if (!identity) {
-      return problem(
+      return problemResponse(
         c,
-        401,
-        "unauthenticated",
-        "No trusted identity was found on this request.",
-        { login_path: provider.loginPath },
+        HttpProblem.of("authenticationRequired", {
+          detail: "No trusted identity was found on this request.",
+          extensions: { loginPath: provider.loginPath },
+        }),
       );
     }
     c.set("identity", identity);
@@ -57,11 +57,11 @@ export function authenticate(
 
 export const requireAdmin: MiddlewareHandler<AuthEnv> = async (c, next) => {
   if (c.get("identity")?.role !== "admin")
-    return problem(
+    return problemResponse(
       c,
-      403,
-      "forbidden",
-      "This action requires an admin (see ADMIN_EMAILS).",
+      HttpProblem.of("adminRequired", {
+        detail: "This action requires an admin (see ADMIN_EMAILS).",
+      }),
     );
   await next();
 };

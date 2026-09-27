@@ -1,7 +1,7 @@
 import type { Db } from "./database";
 import { nowIso } from "./database";
 
-export type IndexRun = {
+type IndexRunRow = {
   id: number;
   started_at: string;
   finished_at: string | null;
@@ -11,6 +11,30 @@ export type IndexRun = {
   removed: number | null;
   error: string | null;
 };
+
+export type IndexRun = {
+  id: number;
+  startedAt: string;
+  finishedAt: string | null;
+  objects: number | null;
+  comments: number | null;
+  webhooks: number | null;
+  removed: number | null;
+  error: string | null;
+};
+
+function toIndexRun(row: IndexRunRow): IndexRun {
+  return {
+    id: row.id,
+    startedAt: row.started_at,
+    finishedAt: row.finished_at,
+    objects: row.objects,
+    comments: row.comments,
+    webhooks: row.webhooks,
+    removed: row.removed,
+    error: row.error,
+  };
+}
 
 export function startIndexRun(db: Db): number {
   const r = db
@@ -49,15 +73,15 @@ export function finishIndexRun(
 }
 
 export function lastIndexRun(db: Db): IndexRun | null {
-  return (
-    (db.prepare("SELECT * FROM index_runs ORDER BY id DESC LIMIT 1").get() as
-      | IndexRun
-      | undefined) ?? null
-  );
+  const row = db
+    .prepare("SELECT * FROM index_runs ORDER BY id DESC LIMIT 1")
+    .get() as IndexRunRow | undefined;
+  return row ? toIndexRun(row) : null;
 }
 
 export function listIndexRuns(db: Db, limit = 20): IndexRun[] {
   return db
     .prepare("SELECT * FROM index_runs ORDER BY id DESC LIMIT ?")
-    .all(limit) as IndexRun[];
+    .all(limit)
+    .map((row) => toIndexRun(row as IndexRunRow));
 }

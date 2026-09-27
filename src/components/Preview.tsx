@@ -3,7 +3,7 @@ import { getObjectText, type Preview as PreviewData } from '@/api/objects'
 import type { ReviewedObject } from '@/domains/ReviewedObject/model'
 
 /**
- * content_type に応じてプレビューを出し分ける。ブラウザは presigned URL で S3 から直接取得する。
+ * contentType に応じてプレビューを出し分ける。ブラウザは presigned URL で S3 から直接取得する。
  * 位置指定コメント（画像領域・動画時間・PDF ページ）は W3C Annotation の selector をここに重ねていく予定
  */
 export function Preview({ object, preview }: { object: ReviewedObject; preview: PreviewData }) {
@@ -29,8 +29,8 @@ export function Preview({ object, preview }: { object: ReviewedObject; preview: 
     default:
       return (
         <div className="p-10 text-center text-sm text-gray-600">
-          <p>この形式（{object.content_type ?? '不明'}）はブラウザでプレビューできません。</p>
-          <a href={preview.download_url} className="mt-3 inline-block rounded bg-gray-800 px-3 py-1.5 text-white">
+          <p>この形式（{object.contentType ?? '不明'}）はブラウザでプレビューできません。</p>
+          <a href={preview.downloadUrl} className="mt-3 inline-block rounded bg-gray-800 px-3 py-1.5 text-white">
             ダウンロードしてレビュー
           </a>
         </div>

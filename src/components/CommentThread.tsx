@@ -24,8 +24,8 @@ export function CommentThread({ object, comments }: { object: ReviewedObject; co
         {comments.map((c) => (
           <li key={c.id} className="rounded bg-gray-50 p-3 text-sm">
             <div className="mb-1 flex items-baseline justify-between gap-2 text-xs text-gray-500">
-              <span className="font-medium text-gray-700">{c.author_name ?? c.author_email}</span>
-              <time dateTime={c.created_at}>{formatDate(c.created_at)}</time>
+              <span className="font-medium text-gray-700">{c.authorName ?? c.authorEmail}</span>
+              <time dateTime={c.createdAt}>{formatDate(c.createdAt)}</time>
             </div>
             <p className="whitespace-pre-wrap">{c.body}</p>
           </li>
