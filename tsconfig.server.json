@@ -10,7 +10,8 @@
     "src/server",
     "src/domains",
     "src/utils/**/*.ts",
-    "test/helpers.ts"
+    "test/helpers.ts",
+    "src/index.ts"
   ],
   "exclude": ["src/utils/hooks.ts", "src/**/*.test.tsx"]
 }

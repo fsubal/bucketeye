@@ -36,7 +36,7 @@ bucketeye の JSON API（`/api/v1`）はエラーを [RFC 9457](https://www.rfc-
 | status | 403                       |
 | title  | Admin privileges required |
 
-Webhook の管理や再索引など、admin だけができる操作です。`ADMIN_EMAILS` に自分のメールアドレスを追加してください。
+Webhook の管理や再索引など、admin だけができる操作です。ブラウザからなら `ADMIN_EMAILS` に自分のメールアドレスを、API トークンで叩くなら `ADMIN_API_TOKENS` のトークンを使ってください（`API_TOKENS` のトークンは reviewer 扱いです）。
 
 ## invalid-query
 

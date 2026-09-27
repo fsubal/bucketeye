@@ -3,5 +3,9 @@
   "references": [
     { "path": "./tsconfig.web.json" },
     { "path": "./tsconfig.server.json" }
-  ]
+  ],
+  // エディタ以外のツール（Hono CLI の hono request が使う esbuild など）がルートの tsconfig から @/ を解決できるように
+  "compilerOptions": {
+    "paths": { "@/*": ["./src/*"] }
+  }
 }

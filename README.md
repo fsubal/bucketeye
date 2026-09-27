@@ -20,8 +20,11 @@ docker compose up --build
 `script/sample/` の中身が `s3://manuscripts/submissions/` に投入され、起動時の再索引で一覧に出ます。詳細画面でコメントを書き、承認ボタンを押すと、ストレージ側のオブジェクトタグに `review-status=approved` が付きます:
 
 ```sh
-docker compose exec app node dist/server.js tags submissions/2026-10-issue/cover.png
+curl -s -H "Authorization: Bearer demo-admin-token" \
+  http://localhost:3000/api/v1/admin/storage/submissions/2026-10-issue/cover.png
 ```
+
+サンプルの投入は compose の `seed` サービス（公式の `amazon/aws-cli` の `aws s3 sync`）が行います。同じファイルは送り直さないので、何度起動しても承認ステータスのタグは消えません。
 
 ## 自分の compose に足す
 
@@ -109,7 +112,7 @@ s3://<S3_BUCKET>/
 
 ## JSON API
 
-`Authorization: Bearer <API_TOKENS のいずれか>`、またはブラウザと同じ前段プロキシの身元で認証します。
+`Authorization: Bearer <トークン>`、またはブラウザと同じ前段プロキシの身元で認証します。トークンは `API_TOKENS` なら reviewer、`ADMIN_API_TOKENS` なら admin として扱います。
 
 エラーは RFC 9457 の Problem Details（`application/problem+json`）です。汎用のエラーは `type: "about:blank"` と HTTP の標準フレーズの `title`、アプリ固有のエラー（認証が必要、admin が必要、入力の検証エラーなど）は固有の `type` URI を持ちます。種類と拡張メンバー（`errors`、`loginPath`）は [docs/problems.md](docs/problems.md) にあります。
 
@@ -125,7 +128,8 @@ s3://<S3_BUCKET>/
 | GET / POST / PATCH / DELETE | `/api/v1/webhooks[/<id>]`                                                                       | Webhook の登録（admin）                                                                                                                                                                 |
 | GET                         | `/api/v1/webhooks/<id>/deliveries`                                                              | 配送履歴                                                                                                                                                                                |
 | POST                        | `/api/v1/webhooks/<id>/ping`                                                                    | テスト配送                                                                                                                                                                              |
-| POST                        | `/api/v1/admin/reindex`                                                                         | 再索引を今すぐ（admin）                                                                                                                                                                 |
+| POST                        | `/api/v1/admin/reindex?wait=true`                                                               | 再索引を今すぐ（admin）。`wait=true` なら終わるまで待って件数を返す（無ければ 202 で即返す）                                                                                            |
+| GET                         | `/api/v1/admin/storage/<key>`                                                                   | S3 に実際に置かれているもの（タグ、`status.json`、コメントのサイドカー）を見る（admin）                                                                                                 |
 | GET                         | `/api/v1/me` / `/api/v1/config`                                                                 | 身元と設定                                                                                                                                                                              |
 
 キーはスラッシュを含むので、動詞つきの操作は `/objects/<key>/comments` のような後置きではなく `/comments/<key>` のように別の名前空間になっています。
@@ -177,7 +181,7 @@ WEBHOOK_SECRET=<登録時に表示された secret> node scripts/webhook-receive
 
 一覧・フィルタを速くするため、`TARGET_PREFIX` 以下をクロールして SQLite に写しています。ORM もジョブキューも使っていません。
 
-- 起動時（`REINDEX_ON_BOOT`）と定期（`REINDEX_EVERY`、既定 10 分）にクロールが走ります。手動なら admin で一覧画面の「再索引」、または `node dist/server.js reindex`。
+- 起動時（`REINDEX_ON_BOOT`）と定期（`REINDEX_EVERY`、既定 10 分）にクロールが走ります。手動なら admin で一覧画面の「再索引」、または `POST /api/v1/admin/reindex?wait=true`（開発中は下の `npm run api`）。
 - 詳細画面を開いたときはその 1 件を S3 から読み直すので、索引が古くても詳細は常に最新です。
 - タグ戦略では 1 オブジェクトごとに GetObjectTagging が飛びます。数千件までは問題ありませんが、それ以上は S3 イベント通知や S3 Inventory による差分更新を検討してください（未実装）。
 
@@ -199,6 +203,16 @@ npm run format               # Prettier（設定は .prettierrc.json。VS Code �
 npm run format:check
 npm run build                # dist/web（Vite）+ dist/server.js（esbuild、依存同梱）
 ```
+
+API の確認にはサーバを立てずに [Hono CLI](https://github.com/honojs/cli) の `hono request` を使えます。`npm run api` は `src/index.ts`（サーバ起動やポーリングをしない、app だけを組むエントリ）に対してリクエストを投げます。環境変数は `.env` から読みます。
+
+```sh
+npm run api -- -P /api/v1/objects -H "Authorization: Bearer $API_TOKEN"
+npm run api -- -X POST -P "/api/v1/admin/reindex?wait=true" -H "Authorization: Bearer $ADMIN_API_TOKEN"
+npm run api -- -P /api/v1/admin/storage/submissions/2026-10-issue/cover.png -H "Authorization: Bearer $ADMIN_API_TOKEN"
+```
+
+S3 と SQLite（`DATA_DIR`）は本物を使うので、稼働中のサーバと同じ状態が見えます。本番のコンテナには Hono CLI もソースも入っていないので、稼働中のサーバには同じパスを curl で叩いてください。
 
 コードの書式は Prettier に任せています。VS Code は保存時に、Claude Code は編集のたびに（`.claude/settings.json` の PostToolUse フックで）同じ `.prettierrc.json` で整形するので、どちらが書いても差分が出ません。
 

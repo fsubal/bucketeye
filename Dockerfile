@@ -18,7 +18,6 @@ ENV NODE_ENV=production \
     DATA_DIR=/data
 WORKDIR /app
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/script/sample ./script/sample
 RUN mkdir -p /data && chown node:node /data
 USER node
 VOLUME /data

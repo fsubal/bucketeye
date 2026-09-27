@@ -29,6 +29,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:-insecure-demo-secret-key-change-me}
       ADMIN_EMAILS: admin@example.com
       API_TOKENS: ${API_TOKENS:-demo-api-token}
+      ADMIN_API_TOKENS: ${ADMIN_API_TOKENS:-demo-admin-token}
       PUBLIC_URL: http://localhost:3000
     volumes:
       - app-data:/data
@@ -57,14 +58,25 @@ services:
       timeout: 3s
       retries: 30
 
-  # バケットを作り、script/sample/ の中身を submissions/ に投入する（同じ内容があればスキップし、タグを壊さない）
+  # バケットを作り、script/sample/ の中身を submissions/ に投入する（アプリのコードは使わない）。
+  # aws s3 sync はサイズと更新時刻が同じファイルを送らないので、2 回目以降の起動でオブジェクトタグ（承認ステータス）を消さない
   seed:
-    build: .
+    image: amazon/aws-cli:latest
     environment:
-      <<: *app-env
+      AWS_ACCESS_KEY_ID: rustfsadmin
+      AWS_SECRET_ACCESS_KEY: rustfsadmin
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://s3:9000
     volumes:
       - ./script/sample:/sample:ro
-    command: ["node", "dist/server.js", "seed", "/sample"]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        aws configure set default.s3.addressing_style path
+        aws s3api head-bucket --bucket manuscripts 2>/dev/null || aws s3 mb s3://manuscripts
+        aws s3 sync /sample s3://manuscripts/submissions/ --no-progress
+        echo "seeded"
     depends_on:
       s3:
         condition: service_healthy

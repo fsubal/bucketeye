@@ -68,6 +68,7 @@ const EnvSchema = z.object({
     .optional(),
   ADMIN_EMAILS: list,
   API_TOKENS: list,
+  ADMIN_API_TOKENS: list,
   IAP_AUDIENCE: z.string().optional(),
   ALB_REGION: z.string().optional(),
   AWS_REGION: z.string().optional(),
@@ -85,10 +86,8 @@ const EnvSchema = z.object({
 
 export type Config = ReturnType<typeof buildConfig>;
 
-/** requireAuth: false は CLI（seed / reindex / tags）用。S3 の設定だけあれば動く */
 export function buildConfig(
   env: Record<string, string | undefined> = process.env,
-  opts: { requireAuth?: boolean } = {},
 ) {
   const parsed = EnvSchema.safeParse(env);
   if (!parsed.success) {
@@ -108,8 +107,7 @@ export function buildConfig(
     );
   }
   const authProvider =
-    e.AUTH_PROVIDER ??
-    (production && opts.requireAuth !== false ? undefined : "developer");
+    e.AUTH_PROVIDER ?? (production ? undefined : "developer");
   if (!authProvider) {
     throw new Error(
       "AUTH_PROVIDER is required in production (gcp_iap | aws_alb | cloudflare_access | forwarded_header | developer)",
@@ -118,7 +116,6 @@ export function buildConfig(
   if (
     authProvider === "developer" &&
     production &&
-    opts.requireAuth !== false &&
     !e.AUTH_ALLOW_DEVELOPER_IN_PRODUCTION
   ) {
     throw new Error(
@@ -157,6 +154,7 @@ export function buildConfig(
       provider: authProvider,
       adminEmails: e.ADMIN_EMAILS,
       apiTokens: e.API_TOKENS,
+      adminApiTokens: e.ADMIN_API_TOKENS,
       iapAudience: e.IAP_AUDIENCE,
       albRegion: e.ALB_REGION || e.AWS_REGION,
       albArn: e.ALB_ARN,

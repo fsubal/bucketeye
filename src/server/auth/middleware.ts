@@ -16,13 +16,13 @@ function validToken(candidates: readonly string[], token: string): boolean {
 
 /**
  * 認証ミドルウェア。順に:
- *   1. Authorization: Bearer <API_TOKENS のいずれか> → サーバ間連携用の身元
+ *   1. Authorization: Bearer <ADMIN_API_TOKENS のいずれか> → admin、<API_TOKENS のいずれか> → reviewer（サーバ間連携や hono request 用の身元）
  *   2. 前段プロキシの身元（AuthProvider）
  *   3. どちらも無ければ 401（problem+json）。loginPath があれば UI 側がそこへ誘導する
  */
 export function authenticate(
   provider: AuthProvider,
-  apiTokens: readonly string[],
+  tokens: { apiTokens: readonly string[]; adminApiTokens: readonly string[] },
 ): MiddlewareHandler<AuthEnv> {
   return async (c, next) => {
     const bearer = /^Bearer (.+)$/.exec(
@@ -30,14 +30,21 @@ export function authenticate(
     )?.[1];
     let identity: Identity | null = null;
     if (bearer) {
-      identity = validToken(apiTokens, bearer)
-        ? {
-            email: "api-token",
-            name: "API token",
-            provider: "api_token",
-            role: "reviewer",
-          }
-        : null;
+      if (validToken(tokens.adminApiTokens, bearer)) {
+        identity = {
+          email: "admin-api-token",
+          name: "Admin API token",
+          provider: "api_token",
+          role: "admin",
+        };
+      } else if (validToken(tokens.apiTokens, bearer)) {
+        identity = {
+          email: "api-token",
+          name: "API token",
+          provider: "api_token",
+          role: "reviewer",
+        };
+      }
     } else {
       identity = await provider.identify(c);
     }
@@ -60,7 +67,8 @@ export const requireAdmin: MiddlewareHandler<AuthEnv> = async (c, next) => {
     return problemResponse(
       c,
       HttpProblem.of("adminRequired", {
-        detail: "This action requires an admin (see ADMIN_EMAILS).",
+        detail:
+          "This action requires an admin (see ADMIN_EMAILS and ADMIN_API_TOKENS).",
       }),
     );
   await next();

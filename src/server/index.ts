@@ -3,20 +3,10 @@ import { createApp } from "./app";
 import { createDeps } from "./deps";
 import { mountStatic } from "./static";
 import { WebhookWorker } from "./webhooks/worker";
-import { runCli } from "./cli";
 
-// `node dist/server.js seed /sample` のようにサブコマンドがあれば CLI として動く
-if (process.argv.length > 2) {
-  runCli(process.argv.slice(2)).then(
-    () => process.exit(0),
-    (e) => {
-      console.error(e instanceof Error ? e.message : e);
-      process.exit(1);
-    },
-  );
-} else {
-  main();
-}
+// 運用・開発の操作（再索引、S3 の状態の確認など）は CLI ではなく admin の API にある。
+// 開発中は `npm run api`（Hono CLI の hono request、エントリは src/index.ts）で叩く
+main();
 
 function main() {
   let deps;

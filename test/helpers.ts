@@ -16,6 +16,7 @@ export const TEST_ENV = {
   TARGET_PREFIX: "submissions/",
   ADMIN_EMAILS: "admin@example.com",
   API_TOKENS: "test-api-token",
+  ADMIN_API_TOKENS: "test-admin-token",
   AUTH_PROVIDER: "developer",
   SECRET_KEY: "test-secret-key-test-secret-key",
   PUBLIC_URL: "https://review.example.com",

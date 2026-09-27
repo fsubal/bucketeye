@@ -215,7 +215,7 @@ export function statusesRoutes() {
 }
 
 /** パスからキーを取り出し、対象範囲（TARGET_PREFIX 以下、サイドカー以外）か確かめる */
-function targetKey(c: Context<AppEnv>, base: string): string {
+export function targetKey(c: Context<AppEnv>, base: string): string {
   const path = c.req.path;
   const key = path.startsWith(base)
     ? decodeURIComponent(path.slice(base.length))

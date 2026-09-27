@@ -38,10 +38,20 @@ export type AppDeps = {
 
 export type AppEnv = AuthEnv & { Variables: { deps: AppDeps } };
 
-export function createApp(deps: AppDeps): Hono<AppEnv> {
+export type CreateAppOptions = {
+  /** リクエストログ。既定は開発時のみ（本番は LOG_REQUESTS=true で有効）。hono request では出力が JSON に混ざるので切る */
+  logRequests?: boolean;
+};
+
+export function createApp(
+  deps: AppDeps,
+  options: CreateAppOptions = {},
+): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
-  if (!deps.config.production || process.env["LOG_REQUESTS"] === "true")
-    app.use(logger());
+  const logRequests =
+    options.logRequests ??
+    (!deps.config.production || process.env["LOG_REQUESTS"] === "true");
+  if (logRequests) app.use(logger());
 
   app.get("/up", (c) => c.text("ok"));
 
@@ -63,7 +73,7 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   if (deps.auth instanceof DeveloperProvider)
     api.route("/dev", devRoutes(deps.auth));
 
-  api.use("*", authenticate(deps.auth, deps.config.auth.apiTokens));
+  api.use("*", authenticate(deps.auth, deps.config.auth));
   api.route("/", meRoutes());
   api.route("/objects", objectsRoutes());
   api.route("/texts", textsRoutes());
