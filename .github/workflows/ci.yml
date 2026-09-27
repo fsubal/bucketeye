@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# 同じブランチに続けて push したら古い実行は止める
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Format, typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # 実ストレージに対する統合テスト（src/server/s3/aws.test.ts）用。compose.yml の s3 と同じ RustFS
+    services:
+      s3:
+        image: rustfs/rustfs:latest
+        env:
+          RUSTFS_ACCESS_KEY: rustfsadmin
+          RUSTFS_SECRET_KEY: rustfsadmin
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -sf http://localhost:9000/health || wget -qO- http://localhost:9000/health || exit 1"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # mise.toml の Node（ローカルと同じ版）を入れる
+      - uses: jdx/mise-action@v4
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-${{ runner.os }}-
+
+      - run: npm ci
+
+      - name: Prettier
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test (incl. integration against RustFS)
+        run: npm test
+        env:
+          S3_TEST_ENDPOINT: http://localhost:9000
+          S3_TEST_ACCESS_KEY_ID: rustfsadmin
+          S3_TEST_SECRET_ACCESS_KEY: rustfsadmin
+
+      - name: Build
+        run: npm run build
+
+      # npm run api（Hono CLI の hono request）が動くことの確認。
+      # src/index.ts の束ね方（tsconfig の paths、requireShim）が壊れると、Hono CLI はエラーのまま終了しないので時間で打ち切る
+      - name: Smoke test `npm run api`
+        timeout-minutes: 2
+        env:
+          S3_BUCKET: ci
+          DATA_DIR: ${{ runner.temp }}/bucketeye-data
+        run: |
+          out="$(npm run -s api -- -P /up)"
+          echo "$out"
+          test "$out" = "ok"
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          tags: bucketeye:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
