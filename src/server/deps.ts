@@ -1,7 +1,7 @@
 import type { AppDeps } from "./app";
 import { createAuthProvider } from "./auth";
 import { buildConfig, type Config } from "./config";
-import { openDatabase } from "./db/database";
+import { Db } from "./db/database";
 import { Poller } from "./indexer/poller";
 import { AwsS3 } from "./s3/aws";
 import { CommentStore } from "./s3/commentStore";
@@ -23,7 +23,7 @@ export function createDeps(options: CreateDepsOptions = {}): AppDeps {
   const config = options.config ?? buildConfig();
   const s3 = options.s3 ?? new AwsS3(config.s3);
   const dbPath = options.dbPath ?? `${config.dataDir}/bucketeye.sqlite`;
-  const db = openDatabase(dbPath);
+  const db = Db.open(dbPath);
   const statusStore = createStatusStore(
     config.s3.statusStrategy,
     s3,

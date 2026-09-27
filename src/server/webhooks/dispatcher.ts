@@ -1,7 +1,6 @@
 import { generateUlid, toIso } from "@/domains/Annotation/model";
 import type { WebhookEvent, WebhookEventType } from "@/domains/Webhook/model";
 import type { Db } from "../db/database";
-import { transaction } from "../db/database";
 import { enqueueDelivery } from "../db/deliveries";
 import { listActiveWebhooksFor } from "../db/webhooks";
 
@@ -30,7 +29,7 @@ export class Dispatcher {
       data: input.data,
     } as WebhookEvent;
     const targets = listActiveWebhooksFor(this.db, input.type);
-    transaction(this.db, () => {
+    this.db.transaction(() => {
       for (const w of targets)
         enqueueDelivery(this.db, generateUlid(), w.id, event);
     });

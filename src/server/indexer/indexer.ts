@@ -1,7 +1,7 @@
 import { toIso } from "@/domains/Annotation/model";
 import { parseSource, ulidOf } from "@/domains/Annotation/model";
 import type { Config } from "../config";
-import { type Db, nowIso, transaction } from "../db/database";
+import { type Db, nowIso } from "../db/database";
 import { deleteCommentsNotIn, upsertComment } from "../db/comments";
 import {
   deleteObjectsIndexedBefore,
@@ -96,7 +96,7 @@ export async function runIndex(deps: IndexerDeps): Promise<IndexResult> {
     webhooks++;
   }
 
-  const removed = transaction(db, () => {
+  const removed = db.transaction(() => {
     deleteCommentsNotIn(db, bucket, seen);
     deleteWebhooksIndexedBefore(db, startedAt);
     return deleteObjectsIndexedBefore(db, bucket, startedAt);

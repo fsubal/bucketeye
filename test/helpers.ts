@@ -1,7 +1,7 @@
 import type { AppDeps } from "@/server/app";
 import { createApp } from "@/server/app";
 import { buildConfig } from "@/server/config";
-import { openDatabase } from "@/server/db/database";
+import { Db } from "@/server/db/database";
 import { Poller } from "@/server/indexer/poller";
 import { CommentStore } from "@/server/s3/commentStore";
 import { MemoryS3 } from "@/server/s3/memory";
@@ -26,7 +26,7 @@ export const TEST_ENV = {
 export function createTestDeps(env: Record<string, string> = {}) {
   const config = buildConfig({ ...TEST_ENV, ...env });
   const s3 = new MemoryS3(config.s3.bucket, config.s3.reviewBucket);
-  const db = openDatabase(":memory:");
+  const db = Db.inMemory;
   const statusStore = createStatusStore(
     config.s3.statusStrategy,
     s3,
