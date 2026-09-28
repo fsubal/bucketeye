@@ -1,20 +1,31 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useNavigate } from "@tanstack/react-router";
+import { z } from "zod";
 import { devLogin } from "@/api/session";
-import { ME_QUERY_KEY } from "@/components/RequireAuth";
+import { meQueryOptions } from "@/components/Auth";
 
-export default function DevLogin() {
+/** ?redirect= にログイン後に戻る先（認証ガードが付ける）。同じオリジン内のパスだけ受け付ける（オープンリダイレクト対策） */
+export const DevLoginSearch = z.object({
+  redirect: z
+    .string()
+    .refine((s) => s.startsWith("/") && !s.startsWith("//"))
+    .optional()
+    .catch(undefined),
+});
+export type DevLoginSearch = z.infer<typeof DevLoginSearch>;
+
+export default function DevLogin({ search }: { search: DevLoginSearch }) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const navigate = useNavigate();
-  const location = useLocation() as { state?: { from?: string } };
   const qc = useQueryClient();
   const m = useMutation({
     mutationFn: () => devLogin(email, name),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ME_QUERY_KEY });
-      navigate(location.state?.from ?? "/objects", { replace: true });
+      // 古い身元（未ログインのエラー）を捨ててから戻る。戻り先の beforeLoad が取り直す
+      qc.removeQueries({ queryKey: meQueryOptions.queryKey });
+      await navigate({ href: search.redirect ?? "/objects", replace: true });
     },
   });
 

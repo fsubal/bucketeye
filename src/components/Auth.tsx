@@ -1,48 +1,25 @@
-import { useQuery } from "@tanstack/react-query";
-import type { ReactNode } from "react";
-import { Navigate, useLocation } from "react-router";
-import { getMe, type Me } from "@/api/session";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { getMe } from "@/api/session";
 import type { Problem } from "@/domains/Problem/model";
-import { HttpError } from "@/utils/http";
 
-export const ME_QUERY_KEY = ["me"] as const;
+/**
+ * /me のクエリ。ルーターの beforeLoad（src/router.tsx）が認証の確認に使い、画面は同じキャッシュを読む。
+ * ログイン・ログアウトの後は removeQueries で捨てること（invalidate だと古い身元が残ったまま beforeLoad を通ってしまう）
+ */
+export const meQueryOptions = queryOptions({
+  queryKey: ["me"] as const,
+  queryFn: getMe,
+  retry: false,
+  staleTime: 60_000,
+});
 
-/** /me の結果。Layout や各ページからも同じキャッシュを読む */
-export function useMe() {
-  return useQuery({
-    queryKey: ME_QUERY_KEY,
-    queryFn: getMe,
-    retry: false,
-    staleTime: 60_000,
-  });
+/** 認証済みのルートの中で、現在の身元を返す（beforeLoad で取得済みなので待たない） */
+export function useCurrentMe() {
+  return useSuspenseQuery(meQueryOptions).data;
 }
 
-/** 未認証なら developer はログイン画面へ、それ以外は「認証ヘッダが届いていません」を出す */
-export function RequireAuth({ children }: { children: (me: Me) => ReactNode }) {
-  const me = useMe();
-  const location = useLocation();
-
-  if (me.isPending)
-    return <p className="p-6 text-sm text-gray-500">読み込み中…</p>;
-  if (me.isError) {
-    const e = me.error;
-    if (e instanceof HttpError && e.status === 401) {
-      if (e.loginPath)
-        return (
-          <Navigate
-            to={e.loginPath}
-            replace
-            state={{ from: location.pathname }}
-          />
-        );
-      return <Unauthenticated problem={e.problem} />;
-    }
-    return <p className="p-6 text-sm text-red-700">エラー: {e.message}</p>;
-  }
-  return <>{children(me.data)}</>;
-}
-
-function Unauthenticated({ problem }: { problem: Problem }) {
+/** 前段プロキシの認証ヘッダが届いていないとき（developer 以外のプロバイダで 401）の画面 */
+export function Unauthenticated({ problem }: { problem: Problem }) {
   return (
     <div className="mx-auto mt-10 max-w-xl rounded border border-red-200 bg-white p-6 text-sm">
       <h1 className="mb-2 text-lg font-semibold text-red-800">

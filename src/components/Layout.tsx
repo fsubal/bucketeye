@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { devLogout, getConfig, type Me } from "@/api/session";
-import { ME_QUERY_KEY } from "./RequireAuth";
+import { meQueryOptions } from "./Auth";
 
 export function Layout({
   me,
@@ -22,8 +22,9 @@ export function Layout({
   const logout = useMutation({
     mutationFn: devLogout,
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ME_QUERY_KEY });
-      navigate("/dev/login");
+      // invalidate だと古い身元がキャッシュに残り、認証ガードを通ってしまうので捨てる
+      qc.removeQueries({ queryKey: meQueryOptions.queryKey });
+      await navigate({ to: "/dev/login" });
     },
   });
 

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useSearchParams } from "react-router";
+import { Link } from "@tanstack/react-router";
+import { z } from "zod";
 import { reindex } from "@/api/admin";
 import { listObjects } from "@/api/objects";
 import type { Me } from "@/api/session";
@@ -9,18 +10,30 @@ import {
   REVIEW_STATUS_LABELS,
   REVIEW_STATUSES,
   ReviewStatus,
-  type ReviewStatus as ReviewStatusT,
 } from "@/domains/ReviewedObject/model";
 import { formatBytes, formatDate } from "@/utils/format";
-import { encodeKey } from "@/utils/http";
 
-/** URL の ?prefix=&status=&page= を状態の正にする */
-export default function ObjectsIndex({ me }: { me: Me }) {
-  const [params] = useSearchParams();
-  const prefix = params.get("prefix") ?? "";
-  const statusParam = ReviewStatus.safeParse(params.get("status"));
-  const status = statusParam.success ? statusParam.data : null;
-  const page = Math.max(1, Number(params.get("page") ?? "1") || 1);
+/**
+ * 一覧の検索パラメータ（?prefix=&status=&page=）。URL を状態の正にする。
+ * 不正な値は捨てて既定値にする（手で書き換えた URL や古いブックマークでも画面が壊れないように）。
+ * 既定値のパラメータはルーター側（src/router.tsx の stripSearchParams）で URL から消す
+ */
+export const ObjectsSearch = z.object({
+  prefix: z.string().default("").catch(""),
+  status: ReviewStatus.optional().catch(undefined),
+  page: z.coerce.number().int().min(1).default(1).catch(1),
+});
+export type ObjectsSearch = z.infer<typeof ObjectsSearch>;
+
+export default function ObjectsIndex({
+  me,
+  search,
+}: {
+  me: Me;
+  search: ObjectsSearch;
+}) {
+  const { prefix, page } = search;
+  const status = search.status ?? null;
 
   const q = useQuery({
     queryKey: ["objects", prefix, status, page],
@@ -36,20 +49,16 @@ export default function ObjectsIndex({ me }: { me: Me }) {
       ),
   });
 
-  const href = (next: {
+  /** リンク先の検索パラメータ。prefix や status を変えたらページは 1 に戻す */
+  const searchFor = (next: {
     prefix?: string;
-    status?: ReviewStatusT | null;
+    status?: ReviewStatus | null;
     page?: number;
-  }) => {
-    const p = new URLSearchParams();
-    const pf = next.prefix ?? prefix;
-    const st = next.status === undefined ? status : next.status;
-    if (pf) p.set("prefix", pf);
-    if (st) p.set("status", st);
-    if (next.page && next.page > 1) p.set("page", String(next.page));
-    const qs = p.toString();
-    return `/objects${qs ? `?${qs}` : ""}`;
-  };
+  }): Partial<ObjectsSearch> => ({
+    prefix: next.prefix ?? prefix,
+    status: (next.status === undefined ? status : next.status) ?? undefined,
+    page: next.page,
+  });
 
   if (q.isPending) return <p className="text-sm text-gray-500">読み込み中…</p>;
   if (q.isError)
@@ -66,7 +75,8 @@ export default function ObjectsIndex({ me }: { me: Me }) {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <nav className="text-sm">
           <Link
-            to={href({ prefix: "" })}
+            to="/objects"
+            search={searchFor({ prefix: "" })}
             className="text-blue-700 hover:underline"
           >
             /
@@ -75,7 +85,8 @@ export default function ObjectsIndex({ me }: { me: Me }) {
             <span key={b.prefix}>
               <span className="mx-1 text-gray-400">/</span>
               <Link
-                to={href({ prefix: b.prefix })}
+                to="/objects"
+                search={searchFor({ prefix: b.prefix })}
                 className="text-blue-700 hover:underline"
               >
                 {b.label}
@@ -110,7 +121,8 @@ export default function ObjectsIndex({ me }: { me: Me }) {
 
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         <Link
-          to={href({ status: null })}
+          to="/objects"
+          search={searchFor({ status: null })}
           className={`rounded px-3 py-1 ${status ? "border border-gray-300 bg-white" : "bg-gray-800 text-white"}`}
         >
           すべて {total}
@@ -118,7 +130,8 @@ export default function ObjectsIndex({ me }: { me: Me }) {
         {REVIEW_STATUSES.map((s) => (
           <Link
             key={s}
-            to={href({ status: s })}
+            to="/objects"
+            search={searchFor({ status: s })}
             className={`rounded px-3 py-1 ${status === s ? "bg-gray-800 text-white" : "border border-gray-300 bg-white"}`}
           >
             {REVIEW_STATUS_LABELS[s]} {data.counts[s] ?? 0}
@@ -150,7 +163,8 @@ export default function ObjectsIndex({ me }: { me: Me }) {
             <tr key={f} className="border-t border-gray-100 hover:bg-gray-50">
               <td className="px-3 py-2" colSpan={5}>
                 <Link
-                  to={href({ prefix: prefix + f })}
+                  to="/objects"
+                  search={searchFor({ prefix: prefix + f })}
                   className="text-blue-700 hover:underline"
                 >
                   📁 {f}
@@ -165,7 +179,8 @@ export default function ObjectsIndex({ me }: { me: Me }) {
             >
               <td className="px-3 py-2">
                 <Link
-                  to={`/objects/${encodeKey(o.key)}`}
+                  to="/objects/$"
+                  params={{ _splat: o.key }}
                   className="text-blue-700 hover:underline"
                 >
                   {status ? o.key : o.name}
@@ -199,7 +214,8 @@ export default function ObjectsIndex({ me }: { me: Me }) {
         <nav className="mt-4 flex items-center justify-center gap-3 text-sm">
           {page > 1 && (
             <Link
-              to={href({ page: page - 1 })}
+              to="/objects"
+              search={searchFor({ page: page - 1 })}
               className="text-blue-700 hover:underline"
             >
               ← 前
@@ -210,7 +226,8 @@ export default function ObjectsIndex({ me }: { me: Me }) {
           </span>
           {page < pages && (
             <Link
-              to={href({ page: page + 1 })}
+              to="/objects"
+              search={searchFor({ page: page + 1 })}
               className="text-blue-700 hover:underline"
             >
               次 →

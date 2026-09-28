@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router";
+import { Link } from "@tanstack/react-router";
 import { getObject } from "@/api/objects";
 import { CommentThread } from "@/components/CommentThread";
 import { Preview } from "@/components/Preview";
@@ -7,8 +7,8 @@ import { StatusForm } from "@/components/StatusForm";
 import { parentPrefixOf } from "@/domains/ReviewedObject/model";
 import { formatBytes, formatDate } from "@/utils/format";
 
-export default function ObjectsShow() {
-  const key = decodeURIComponent(useParams()["*"] ?? "");
+/** objectKey はルーターが /objects/$ の残り（_splat）から渡す。デコード済み */
+export default function ObjectsShow({ objectKey: key }: { objectKey: string }) {
   const q = useQuery({
     queryKey: ["object", key],
     queryFn: () => getObject(key),
