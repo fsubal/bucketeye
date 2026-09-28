@@ -14,6 +14,10 @@ export class HttpError extends Error {
     super(problem.detail ?? problem.title ?? `HTTP ${status}`);
   }
 
+  static isHttpError(value: unknown, status: number): value is HttpError {
+    return value instanceof this && value.status === status;
+  }
+
   get loginPath(): string | null {
     return this.problem.loginPath ?? null;
   }
@@ -49,6 +53,7 @@ export async function request<T>(
   init: RequestInit & { json?: unknown } = {},
 ): Promise<T> {
   const { json, ...rest } = init;
+
   const res = await fetch(path, {
     ...rest,
     credentials: "same-origin",
@@ -59,8 +64,10 @@ export async function request<T>(
     },
     body: json !== undefined ? JSON.stringify(json) : rest.body,
   });
+
   if (!res.ok) await throwProblem(res);
   if (res.status === 204) return schema.parse(undefined);
+
   return schema.parse(await res.json());
 }
 

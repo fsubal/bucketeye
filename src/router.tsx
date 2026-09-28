@@ -92,12 +92,13 @@ const authRoute = createRoute({
       const me = await context.queryClient.query(meQueryOptions);
       return { me };
     } catch (e) {
-      if (e instanceof HttpError && e.status === 401 && e.loginPath) {
+      if (HttpError.isHttpError(e, 401) && e.loginPath) {
         throw redirect({
           to: "/dev/login",
           search: { redirect: location.href },
         });
       }
+
       throw e;
     }
   },
@@ -115,9 +116,10 @@ const authRoute = createRoute({
 });
 
 function AuthError({ error }: ErrorComponentProps) {
-  if (error instanceof HttpError && error.status === 401) {
+  if (HttpError.isHttpError(error, 401)) {
     return <Unauthenticated problem={error.problem} />;
   }
+
   const message = error instanceof Error ? error.message : String(error);
   return <p className="p-6 text-sm text-red-700">エラー: {message}</p>;
 }
