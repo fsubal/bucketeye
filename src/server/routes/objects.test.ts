@@ -567,3 +567,56 @@ describe("updatedSince", () => {
     }
   });
 });
+
+describe("位置指定コメント", () => {
+  const post = (key: string, body: unknown) =>
+    t.app.request(`/api/v1/comments/${key}`, {
+      method: "POST",
+      ...json(body, auth),
+    });
+
+  test.each([
+    [
+      "submissions/2026/cover.png",
+      "xywh=percent:10.123,20,30,40",
+      "xywh=percent:10.12,20,30,40",
+    ],
+    ["submissions/2026/body.pdf", "page=3", "page=3"],
+    ["submissions/notes.txt", "line=0,1", "line=0,1"],
+  ])("%s に %s を付けると正規化して保存する", async (key, value, stored) => {
+    const res = await post(key, {
+      body: "here",
+      selector: { type: "FragmentSelector", value },
+    });
+    expect(res.status).toBe(201);
+    const [annotation] = await t.commentStore.list(key);
+    expect(annotation?.target.selector).toMatchObject({
+      type: "FragmentSelector",
+      value: stored,
+    });
+    expect(annotation?.target.selector).toHaveProperty("conformsTo");
+    // API で返すコメントにも同じ位置が入る
+    const show = (await (
+      await t.app.request(`/api/v1/objects/${key}`, { headers: auth })
+    ).json()) as any;
+    expect(show.comments[0].selector.value).toBe(stored);
+  });
+
+  test.each([
+    ["submissions/notes.txt", "xywh=percent:0,0,10,10", "text"], // テキストに範囲
+    ["submissions/2026/cover.png", "page=2", "image"], // 画像にページ
+    ["submissions/2026/cover.png", "xywh=percent:95,0,10,10", "image"], // はみ出し
+    ["submissions/2026/cover.png", "garbage", "image"],
+  ])("%s に %s は 422（#/selector）", async (key, value) => {
+    const res = await post(key, {
+      body: "here",
+      selector: { type: "FragmentSelector", value },
+    });
+    expect(res.status).toBe(422);
+    const problem = (await res.json()) as any;
+    expect(problem.errors.map((e: { pointer: string }) => e.pointer)).toEqual([
+      "#/selector",
+    ]);
+    expect(await t.commentStore.list(key)).toEqual([]);
+  });
+});

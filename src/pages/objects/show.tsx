@@ -1,8 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { getObject } from "@/api/objects";
 import { CommentThread } from "@/components/CommentThread";
-import { Preview } from "@/components/Preview";
+import { Preview } from "@/components/Preview/Preview";
+import {
+  type Position,
+  positionedComments,
+} from "@/domains/Annotation/position";
 import { StatusForm } from "@/components/StatusForm";
 import { parentPrefixOf } from "@/domains/ReviewedObject/model";
 import { formatBytes } from "@/utils/format";
@@ -15,6 +20,13 @@ export default function ObjectsShow({ objectKey: key }: { objectKey: string }) {
     queryFn: () => getObject(key),
     enabled: key !== "",
   });
+  // 位置指定コメントの状態。プレビュー（指定する・示す）とコメント欄（投稿する・選ぶ）で共有する
+  const [draft, setDraft] = useState<Position | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const positioned = useMemo(
+    () => positionedComments(q.data?.comments ?? []),
+    [q.data?.comments],
+  );
 
   if (q.isPending) return <p className="text-sm text-gray-500">読み込み中…</p>;
   if (q.isError)
@@ -54,11 +66,30 @@ export default function ObjectsShow({ objectKey: key }: { objectKey: string }) {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
         <div className="overflow-hidden rounded border border-gray-200 bg-white">
-          <Preview object={object} preview={preview} />
+          <Preview
+            object={object}
+            preview={preview}
+            comments={positioned}
+            draft={draft}
+            onDraftChange={(p) => {
+              setDraft(p);
+              setActiveId(null);
+            }}
+            activeId={activeId}
+            onActivate={setActiveId}
+          />
         </div>
         <div className="space-y-4">
           <StatusForm object={object} />
-          <CommentThread object={object} comments={comments} />
+          <CommentThread
+            object={object}
+            comments={comments}
+            positioned={positioned}
+            draft={draft}
+            onClearDraft={() => setDraft(null)}
+            activeId={activeId}
+            onActivate={setActiveId}
+          />
         </div>
       </div>
     </>

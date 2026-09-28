@@ -1,7 +1,17 @@
 import { Hono, type Context } from "hono";
 import { z } from "zod";
 import { Selector } from "@/domains/Annotation/model";
-import { normalizePrefix, ReviewStatus } from "@/domains/ReviewedObject/model";
+import {
+  fromSelector,
+  isPositionAllowed,
+  positionKindFor,
+  toSelector,
+} from "@/domains/Annotation/position";
+import {
+  normalizePrefix,
+  type ObjectKind,
+  ReviewStatus,
+} from "@/domains/ReviewedObject/model";
 import { Instant, toIsoSeconds } from "@/utils/datetime";
 import type { AppEnv } from "../app";
 import {
@@ -146,12 +156,13 @@ export function commentsRoutes() {
     if (!input.success) throw HttpProblem.validationFailed(input.error.issues);
     const object = await findOrSyncObject(deps, key);
     if (!object) throw HttpProblem.notFound();
+    const selector = normalizeSelector(object.kind, input.data.selector);
 
     // S3 に書いてから SQLite に写す（S3 が真実）
     const annotation = await deps.commentStore.append(key, {
       body: input.data.body,
       creator: c.get("identity"),
-      selector: input.data.selector,
+      selector,
     });
     const comment = upsertComment(deps.db, deps.s3.bucket, key, annotation);
     deps.dispatcher.emit({
@@ -212,6 +223,30 @@ export function statusesRoutes() {
   });
 
   return r;
+}
+
+/**
+ * コメントの位置（selector）を検証して正規化する。
+ * 読めない値や、ファイルの種類に合わない位置（画像に行番号など）は 422。受け付けた値は書式を揃えて保存する
+ */
+function normalizeSelector(
+  kind: ObjectKind,
+  selector: Selector | undefined,
+): Selector | undefined {
+  if (!selector) return undefined;
+  const position = fromSelector(selector);
+  const expected = positionKindFor(kind);
+  if (!position || !isPositionAllowed(kind, position)) {
+    throw HttpProblem.validationFailed([
+      {
+        path: ["selector"],
+        message: expected
+          ? `this ${kind} accepts only a ${expected} position (see src/domains/Annotation/position.ts)`
+          : `positions are not supported for ${kind} files; omit selector to comment on the whole file`,
+      },
+    ]);
+  }
+  return toSelector(position);
 }
 
 /** パスからキーを取り出し、対象範囲（TARGET_PREFIX 以下、サイドカー以外）か確かめる */

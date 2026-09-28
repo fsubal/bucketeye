@@ -6,8 +6,8 @@ import { Identity } from "@/domains/Identity/model";
 /**
  * コメント 1 件を W3C Web Annotation Data Model（https://www.w3.org/TR/annotation-model/）で表す。
  * S3 に置く JSON はこの形そのもの（Rails 版 s3review とバイト互換）。
- * 今はファイル全体へのコメントだけなので target.selector は無いが、
- * 画像領域（FragmentSelector xywh=）・動画時間（t=）・PDF ページ（page=）はここに足す。
+ * ファイル全体へのコメントは target.selector を持たない。位置指定コメント（画像の範囲・動画の時刻・PDF のページ・
+ * テキストの行）は target.selector の FragmentSelector に入る。読み書きと検証は ./position.ts
  */
 export const ANNOTATION_CONTEXT = "http://www.w3.org/ns/anno.jsonld";
 
