@@ -82,18 +82,48 @@ export function ImageAnnotator({
   const draftRegion = draft?.kind === "region" ? draft : null;
 
   return (
-    <div className="flex flex-col items-center gap-3 bg-[repeating-conic-gradient(#f3f4f6_0%_25%,#fff_0%_50%)] bg-size-[20px_20px] p-4">
-      <div className="flex w-full flex-wrap items-center gap-2 text-xs text-gray-600">
+    <div
+      className={clsx(
+        "flex",
+        "flex-col",
+        "items-center",
+        "gap-3",
+        "bg-[repeating-conic-gradient(#f3f4f6_0%_25%,#fff_0%_50%)]",
+        "bg-size-[20px_20px]",
+        "p-4",
+      )}
+    >
+      <div
+        className={clsx(
+          "flex",
+          "w-full",
+          "flex-wrap",
+          "items-center",
+          "gap-2",
+          "text-xs",
+          "text-gray-600",
+        )}
+      >
         <ToggleButton
           isSelected={drawing}
           onChange={setDrawing}
           className={({ isSelected, isFocusVisible }) =>
             clsx(
-              "rounded border px-2 py-1 text-xs outline-none",
+              "rounded",
+              "border",
+              "px-2",
+              "py-1",
+              "text-xs",
+              "outline-none",
               isSelected
-                ? "border-blue-600 bg-blue-600 text-white"
-                : "border-gray-300 bg-white text-gray-800 hover:bg-gray-100",
-              isFocusVisible && "ring-2 ring-blue-400",
+                ? ["border-blue-600", "bg-blue-600", "text-white"]
+                : [
+                    "border-gray-300",
+                    "bg-white",
+                    "text-gray-800",
+                    "hover:bg-gray-100",
+                  ],
+              isFocusVisible && ["ring-2", "ring-blue-400"],
             )
           }
         >
@@ -109,7 +139,10 @@ export function ImageAnnotator({
       <div
         ref={box}
         className={clsx(
-          "relative inline-block touch-none select-none",
+          "relative",
+          "inline-block",
+          "touch-none",
+          "select-none",
           drawing && "cursor-crosshair",
         )}
         onPointerDown={onPointerDown}
@@ -128,7 +161,7 @@ export function ImageAnnotator({
           src={src}
           alt={alt}
           draggable={false}
-          className="block max-h-[70vh] max-w-full"
+          className={clsx("block", "max-h-[70vh]", "max-w-full")}
         />
 
         {regions.map(({ comment, position, number }) => {
@@ -141,19 +174,36 @@ export function ImageAnnotator({
               style={boxStyle(position)}
               className={({ isFocusVisible }) =>
                 clsx(
-                  "absolute rounded-sm border-2 outline-none",
+                  "absolute",
+                  "rounded-sm",
+                  "border-2",
+                  "outline-none",
                   // 範囲を描いている間は既存の枠がドラッグの邪魔をしないように
                   drawing && "pointer-events-none",
                   active
-                    ? "border-amber-500 bg-amber-400/25"
-                    : "border-amber-400/80 bg-transparent hover:bg-amber-300/15",
-                  isFocusVisible && "ring-2 ring-blue-400",
+                    ? ["border-amber-500", "bg-amber-400/25"]
+                    : [
+                        "border-amber-400/80",
+                        "bg-transparent",
+                        "hover:bg-amber-300/15",
+                      ],
+                  isFocusVisible && ["ring-2", "ring-blue-400"],
                 )
               }
             >
               <span
                 className={clsx(
-                  "absolute -top-2.5 -left-2.5 flex size-5 items-center justify-center rounded-full text-[10px] font-semibold text-white",
+                  "absolute",
+                  "-top-2.5",
+                  "-left-2.5",
+                  "flex",
+                  "size-5",
+                  "items-center",
+                  "justify-center",
+                  "rounded-full",
+                  "text-[10px]",
+                  "font-semibold",
+                  "text-white",
                   active ? "bg-amber-600" : "bg-amber-500",
                 )}
               >
@@ -167,13 +217,28 @@ export function ImageAnnotator({
           <div
             data-testid="draft-region"
             style={boxStyle(draftRegion)}
-            className="pointer-events-none absolute rounded-sm border-2 border-dashed border-blue-600 bg-blue-500/15"
+            className={clsx(
+              "pointer-events-none",
+              "absolute",
+              "rounded-sm",
+              "border-2",
+              "border-dashed",
+              "border-blue-600",
+              "bg-blue-500/15",
+            )}
           />
         )}
         {live && (
           <div
             style={boxStyle(live)}
-            className="pointer-events-none absolute border-2 border-dashed border-blue-600 bg-blue-500/10"
+            className={clsx(
+              "pointer-events-none",
+              "absolute",
+              "border-2",
+              "border-dashed",
+              "border-blue-600",
+              "bg-blue-500/10",
+            )}
           />
         )}
       </div>

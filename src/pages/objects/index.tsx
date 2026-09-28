@@ -1,3 +1,4 @@
+import { clsx } from "clsx";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { z } from "zod";
@@ -61,9 +62,10 @@ export default function ObjectsIndex({
     page: next.page,
   });
 
-  if (q.isPending) return <p className="text-sm text-gray-500">読み込み中…</p>;
+  if (q.isPending)
+    return <p className={clsx("text-sm", "text-gray-500")}>読み込み中…</p>;
   if (q.isError)
-    return <p className="text-sm text-red-700">{q.error.message}</p>;
+    return <p className={clsx("text-sm", "text-red-700")}>{q.error.message}</p>;
   const data = q.data;
   const total = Object.values(data.counts).reduce((a, b) => a + (b ?? 0), 0);
   const pages = Math.max(
@@ -73,29 +75,46 @@ export default function ObjectsIndex({
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div
+        className={clsx(
+          "mb-4",
+          "flex",
+          "flex-wrap",
+          "items-center",
+          "justify-between",
+          "gap-2",
+        )}
+      >
         <nav className="text-sm">
           <Link
             to="/objects"
             search={searchFor({ prefix: "" })}
-            className="text-blue-700 hover:underline"
+            className={clsx("text-blue-700", "hover:underline")}
           >
             /
           </Link>
           {breadcrumbsOf(prefix).map((b) => (
             <span key={b.prefix}>
-              <span className="mx-1 text-gray-400">/</span>
+              <span className={clsx("mx-1", "text-gray-400")}>/</span>
               <Link
                 to="/objects"
                 search={searchFor({ prefix: b.prefix })}
-                className="text-blue-700 hover:underline"
+                className={clsx("text-blue-700", "hover:underline")}
               >
                 {b.label}
               </Link>
             </span>
           ))}
         </nav>
-        <div className="flex items-center gap-2 text-xs text-gray-500">
+        <div
+          className={clsx(
+            "flex",
+            "items-center",
+            "gap-2",
+            "text-xs",
+            "text-gray-500",
+          )}
+        >
           {data.lastIndexRun && (
             <span title={data.lastIndexRun.error ?? undefined}>
               最終索引:{" "}
@@ -103,7 +122,7 @@ export default function ObjectsIndex({
                 data.lastIndexRun.finishedAt ?? data.lastIndexRun.startedAt,
               )}
               {data.lastIndexRun.error && (
-                <span className="ml-1 text-red-600">（失敗）</span>
+                <span className={clsx("ml-1", "text-red-600")}>（失敗）</span>
               )}
             </span>
           )}
@@ -112,7 +131,16 @@ export default function ObjectsIndex({
               type="button"
               onClick={() => reindexM.mutate()}
               disabled={reindexM.isPending}
-              className="rounded border border-gray-300 bg-white px-2 py-1 hover:bg-gray-100 disabled:opacity-50"
+              className={clsx(
+                "rounded",
+                "border",
+                "border-gray-300",
+                "bg-white",
+                "px-2",
+                "py-1",
+                "hover:bg-gray-100",
+                "disabled:opacity-50",
+              )}
             >
               再索引
             </button>
@@ -120,7 +148,7 @@ export default function ObjectsIndex({
         </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2 text-sm">
+      <div className={clsx("mb-4", "flex", "flex-wrap", "gap-2", "text-sm")}>
         <Link
           to="/objects"
           search={searchFor({ status: null })}
@@ -141,7 +169,18 @@ export default function ObjectsIndex({
       </div>
 
       {!data.indexed && (
-        <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div
+          className={clsx(
+            "mb-4",
+            "rounded",
+            "border",
+            "border-amber-200",
+            "bg-amber-50",
+            "p-4",
+            "text-sm",
+            "text-amber-900",
+          )}
+        >
           <p className="font-medium">索引がまだありません。</p>
           <p className="mt-1">
             起動時に再索引が走ります。数秒待ってから再読み込みしてください。
@@ -149,24 +188,50 @@ export default function ObjectsIndex({
         </div>
       )}
 
-      <table className="w-full border-collapse overflow-hidden rounded border border-gray-200 bg-white text-sm">
-        <thead className="bg-gray-100 text-left text-xs uppercase text-gray-600">
+      <table
+        className={clsx(
+          "w-full",
+          "border-collapse",
+          "overflow-hidden",
+          "rounded",
+          "border",
+          "border-gray-200",
+          "bg-white",
+          "text-sm",
+        )}
+      >
+        <thead
+          className={clsx(
+            "bg-gray-100",
+            "text-left",
+            "text-xs",
+            "uppercase",
+            "text-gray-600",
+          )}
+        >
           <tr>
-            <th className="px-3 py-2">名前</th>
-            <th className="px-3 py-2">ステータス</th>
-            <th className="px-3 py-2">種類</th>
-            <th className="px-3 py-2 text-right">サイズ</th>
-            <th className="px-3 py-2">更新日時</th>
+            <th className={clsx("px-3", "py-2")}>名前</th>
+            <th className={clsx("px-3", "py-2")}>ステータス</th>
+            <th className={clsx("px-3", "py-2")}>種類</th>
+            <th className={clsx("px-3", "py-2", "text-right")}>サイズ</th>
+            <th className={clsx("px-3", "py-2")}>更新日時</th>
           </tr>
         </thead>
         <tbody>
           {data.folders.map((f) => (
-            <tr key={f} className="border-t border-gray-100 hover:bg-gray-50">
-              <td className="px-3 py-2" colSpan={5}>
+            <tr
+              key={f}
+              className={clsx(
+                "border-t",
+                "border-gray-100",
+                "hover:bg-gray-50",
+              )}
+            >
+              <td className={clsx("px-3", "py-2")} colSpan={5}>
                 <Link
                   to="/objects"
                   search={searchFor({ prefix: prefix + f })}
-                  className="text-blue-700 hover:underline"
+                  className={clsx("text-blue-700", "hover:underline")}
                 >
                   📁 {f}
                 </Link>
@@ -176,34 +241,43 @@ export default function ObjectsIndex({
           {data.objects.map((o) => (
             <tr
               key={o.key}
-              className="border-t border-gray-100 hover:bg-gray-50"
+              className={clsx(
+                "border-t",
+                "border-gray-100",
+                "hover:bg-gray-50",
+              )}
             >
-              <td className="px-3 py-2">
+              <td className={clsx("px-3", "py-2")}>
                 <Link
                   to="/objects/$"
                   params={{ _splat: o.key }}
-                  className="text-blue-700 hover:underline"
+                  className={clsx("text-blue-700", "hover:underline")}
                 >
                   {status ? o.key : o.name}
                 </Link>
               </td>
-              <td className="px-3 py-2">
+              <td className={clsx("px-3", "py-2")}>
                 <StatusBadge status={o.status} />
               </td>
-              <td className="px-3 py-2 text-gray-600">
+              <td className={clsx("px-3", "py-2", "text-gray-600")}>
                 {o.contentType ?? "-"}
               </td>
-              <td className="px-3 py-2 text-right text-gray-600">
+              <td
+                className={clsx("px-3", "py-2", "text-right", "text-gray-600")}
+              >
                 {formatBytes(o.size)}
               </td>
-              <td className="px-3 py-2 text-gray-600">
+              <td className={clsx("px-3", "py-2", "text-gray-600")}>
                 {formatDateTime(o.lastModified)}
               </td>
             </tr>
           ))}
           {data.folders.length === 0 && data.objects.length === 0 && (
             <tr>
-              <td className="px-3 py-6 text-center text-gray-500" colSpan={5}>
+              <td
+                className={clsx("px-3", "py-6", "text-center", "text-gray-500")}
+                colSpan={5}
+              >
                 オブジェクトがありません
               </td>
             </tr>
@@ -212,12 +286,21 @@ export default function ObjectsIndex({
       </table>
 
       {pages > 1 && (
-        <nav className="mt-4 flex items-center justify-center gap-3 text-sm">
+        <nav
+          className={clsx(
+            "mt-4",
+            "flex",
+            "items-center",
+            "justify-center",
+            "gap-3",
+            "text-sm",
+          )}
+        >
           {page > 1 && (
             <Link
               to="/objects"
               search={searchFor({ page: page - 1 })}
-              className="text-blue-700 hover:underline"
+              className={clsx("text-blue-700", "hover:underline")}
             >
               ← 前
             </Link>
@@ -229,7 +312,7 @@ export default function ObjectsIndex({
             <Link
               to="/objects"
               search={searchFor({ page: page + 1 })}
-              className="text-blue-700 hover:underline"
+              className={clsx("text-blue-700", "hover:underline")}
             >
               次 →
             </Link>

@@ -1,3 +1,4 @@
+import { clsx } from "clsx";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -30,9 +31,22 @@ export default function DevLogin({ search }: { search: DevLoginSearch }) {
   });
 
   return (
-    <div className="mx-auto mt-10 max-w-md rounded border border-gray-200 bg-white p-6">
-      <h1 className="mb-1 text-lg font-semibold">開発用ログイン</h1>
-      <p className="mb-4 text-xs text-amber-700">
+    <div
+      className={clsx(
+        "mx-auto",
+        "mt-10",
+        "max-w-md",
+        "rounded",
+        "border",
+        "border-gray-200",
+        "bg-white",
+        "p-6",
+      )}
+    >
+      <h1 className={clsx("mb-1", "text-lg", "font-semibold")}>
+        開発用ログイン
+      </h1>
+      <p className={clsx("mb-4", "text-xs", "text-amber-700")}>
         誰でも誰にでもなれます。開発・デモ専用です。
       </p>
       <form
@@ -42,29 +56,53 @@ export default function DevLogin({ search }: { search: DevLoginSearch }) {
         }}
         className="space-y-3"
       >
-        <label className="block text-sm">
+        <label className={clsx("block", "text-sm")}>
           <span className="text-gray-700">メールアドレス</span>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded border border-gray-300 p-2"
+            className={clsx(
+              "mt-1",
+              "w-full",
+              "rounded",
+              "border",
+              "border-gray-300",
+              "p-2",
+            )}
           />
         </label>
-        <label className="block text-sm">
+        <label className={clsx("block", "text-sm")}>
           <span className="text-gray-700">表示名（任意）</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded border border-gray-300 p-2"
+            className={clsx(
+              "mt-1",
+              "w-full",
+              "rounded",
+              "border",
+              "border-gray-300",
+              "p-2",
+            )}
           />
         </label>
-        {m.isError && <p className="text-xs text-red-600">{m.error.message}</p>}
+        {m.isError && (
+          <p className={clsx("text-xs", "text-red-600")}>{m.error.message}</p>
+        )}
         <button
           type="submit"
           disabled={m.isPending}
-          className="w-full rounded bg-gray-800 py-2 text-sm text-white disabled:opacity-50"
+          className={clsx(
+            "w-full",
+            "rounded",
+            "bg-gray-800",
+            "py-2",
+            "text-sm",
+            "text-white",
+            "disabled:opacity-50",
+          )}
         >
           ログイン
         </button>

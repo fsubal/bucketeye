@@ -1,3 +1,4 @@
+import { clsx } from "clsx";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
@@ -15,20 +16,30 @@ export default function WebhooksIndex() {
   const q = useQuery({ queryKey: ["webhooks"], queryFn: listWebhooks });
   return (
     <>
-      <h1 className="mb-4 text-xl font-semibold">Webhook</h1>
-      <p className="mb-4 text-sm text-gray-600">
+      <h1 className={clsx("mb-4", "text-xl", "font-semibold")}>Webhook</h1>
+      <p className={clsx("mb-4", "text-sm", "text-gray-600")}>
         承認ステータスの変更やコメントの投稿を、登録した URL に HMAC 署名付きで
         POST します。配送は失敗すると 1 分 → 5 分 → 30 分 … と間隔を広げて最大 8
         回まで再送します。
       </p>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
+      <div
+        className={clsx(
+          "grid",
+          "gap-4",
+          "lg:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]",
+        )}
+      >
         <div className="space-y-3">
-          {q.isPending && <p className="text-sm text-gray-500">読み込み中…</p>}
+          {q.isPending && (
+            <p className={clsx("text-sm", "text-gray-500")}>読み込み中…</p>
+          )}
           {q.isError && (
-            <p className="text-sm text-red-700">{q.error.message}</p>
+            <p className={clsx("text-sm", "text-red-700")}>{q.error.message}</p>
           )}
           {q.data?.length === 0 && (
-            <p className="text-sm text-gray-500">まだ登録がありません</p>
+            <p className={clsx("text-sm", "text-gray-500")}>
+              まだ登録がありません
+            </p>
           )}
           {q.data?.map((w) => (
             <WebhookRow key={w.id} webhook={w} />
@@ -73,10 +84,18 @@ function WebhookRow({ webhook }: { webhook: WebhookPublic }) {
     <section
       className={`rounded border bg-white p-4 text-sm ${webhook.active ? "border-gray-200" : "border-gray-200 opacity-60"}`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
+      <div
+        className={clsx(
+          "flex",
+          "flex-wrap",
+          "items-start",
+          "justify-between",
+          "gap-2",
+        )}
+      >
         <div className="min-w-0">
-          <p className="break-all font-medium">{webhook.url}</p>
-          <p className="text-xs text-gray-500">
+          <p className={clsx("break-all", "font-medium")}>{webhook.url}</p>
+          <p className={clsx("text-xs", "text-gray-500")}>
             {webhook.events.map((e) => (
               <code key={e} className="mr-2">
                 {e}
@@ -85,34 +104,65 @@ function WebhookRow({ webhook }: { webhook: WebhookPublic }) {
             · secret {webhook.secretHint} · {webhook.createdBy} ·{" "}
             {formatDateTime(webhook.createdAt)}
             {!webhook.active && (
-              <span className="ml-2 rounded bg-gray-200 px-1.5 text-gray-700">
+              <span
+                className={clsx(
+                  "ml-2",
+                  "rounded",
+                  "bg-gray-200",
+                  "px-1.5",
+                  "text-gray-700",
+                )}
+              >
                 無効
               </span>
             )}
           </p>
           {webhook.description && (
-            <p className="mt-1 text-gray-700">{webhook.description}</p>
+            <p className={clsx("mt-1", "text-gray-700")}>
+              {webhook.description}
+            </p>
           )}
         </div>
-        <div className="flex flex-wrap gap-2 text-xs">
+        <div className={clsx("flex", "flex-wrap", "gap-2", "text-xs")}>
           <button
             type="button"
             onClick={() => ping.mutate()}
-            className="rounded border border-gray-300 px-2 py-1 hover:bg-gray-100"
+            className={clsx(
+              "rounded",
+              "border",
+              "border-gray-300",
+              "px-2",
+              "py-1",
+              "hover:bg-gray-100",
+            )}
           >
             テスト配送
           </button>
           <button
             type="button"
             onClick={() => toggle.mutate()}
-            className="rounded border border-gray-300 px-2 py-1 hover:bg-gray-100"
+            className={clsx(
+              "rounded",
+              "border",
+              "border-gray-300",
+              "px-2",
+              "py-1",
+              "hover:bg-gray-100",
+            )}
           >
             {webhook.active ? "無効にする" : "有効にする"}
           </button>
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="rounded border border-gray-300 px-2 py-1 hover:bg-gray-100"
+            className={clsx(
+              "rounded",
+              "border",
+              "border-gray-300",
+              "px-2",
+              "py-1",
+              "hover:bg-gray-100",
+            )}
           >
             配送履歴
           </button>
@@ -122,15 +172,23 @@ function WebhookRow({ webhook }: { webhook: WebhookPublic }) {
               if (window.confirm("この Webhook を削除しますか？"))
                 remove.mutate();
             }}
-            className="rounded border border-red-300 px-2 py-1 text-red-700 hover:bg-red-50"
+            className={clsx(
+              "rounded",
+              "border",
+              "border-red-300",
+              "px-2",
+              "py-1",
+              "text-red-700",
+              "hover:bg-red-50",
+            )}
           >
             削除
           </button>
         </div>
       </div>
       {open && (
-        <table className="mt-3 w-full text-xs">
-          <thead className="text-left text-gray-500">
+        <table className={clsx("mt-3", "w-full", "text-xs")}>
+          <thead className={clsx("text-left", "text-gray-500")}>
             <tr>
               <th className="py-1">イベント</th>
               <th className="py-1">試行</th>
@@ -142,13 +200,13 @@ function WebhookRow({ webhook }: { webhook: WebhookPublic }) {
           <tbody>
             {deliveries.data?.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-2 text-gray-500">
+                <td colSpan={5} className={clsx("py-2", "text-gray-500")}>
                   配送はまだありません
                 </td>
               </tr>
             )}
             {deliveries.data?.map((d) => (
-              <tr key={d.id} className="border-t border-gray-100">
+              <tr key={d.id} className={clsx("border-t", "border-gray-100")}>
                 <td className="py-1">
                   <code>{d.eventType}</code>
                 </td>

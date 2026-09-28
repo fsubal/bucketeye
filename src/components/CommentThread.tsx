@@ -59,13 +59,23 @@ export function CommentThread({
   const kind = positionKindFor(object.kind);
 
   return (
-    <section className="rounded border border-gray-200 bg-white p-4">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">
+    <section
+      className={clsx(
+        "rounded",
+        "border",
+        "border-gray-200",
+        "bg-white",
+        "p-4",
+      )}
+    >
+      <h2 className={clsx("mb-3", "text-sm", "font-semibold", "text-gray-700")}>
         コメント ({comments.length})
       </h2>
       <ul className="space-y-3">
         {comments.length === 0 && (
-          <li className="text-sm text-gray-500">まだコメントはありません</li>
+          <li className={clsx("text-sm", "text-gray-500")}>
+            まだコメントはありません
+          </li>
         )}
         {comments.map((c) => {
           const p = byId.get(c.id);
@@ -74,30 +84,55 @@ export function CommentThread({
             <li
               key={c.id}
               className={clsx(
-                "rounded p-3 text-sm",
-                active ? "bg-amber-50 ring-2 ring-amber-400" : "bg-gray-50",
+                "rounded",
+                "p-3",
+                "text-sm",
+                active
+                  ? ["bg-amber-50", "ring-2", "ring-amber-400"]
+                  : "bg-gray-50",
               )}
             >
-              <div className="mb-1 flex items-baseline justify-between gap-2 text-xs text-gray-500">
-                <span className="flex items-baseline gap-2">
+              <div
+                className={clsx(
+                  "mb-1",
+                  "flex",
+                  "items-baseline",
+                  "justify-between",
+                  "gap-2",
+                  "text-xs",
+                  "text-gray-500",
+                )}
+              >
+                <span className={clsx("flex", "items-baseline", "gap-2")}>
                   {p && (
                     <Button
                       aria-pressed={active}
                       onPress={() => onActivate(active ? null : c.id)}
                       className={({ isFocusVisible }) =>
                         clsx(
-                          "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap outline-none",
+                          "shrink-0",
+                          "rounded-full",
+                          "px-2",
+                          "py-0.5",
+                          "text-[11px]",
+                          "font-semibold",
+                          "whitespace-nowrap",
+                          "outline-none",
                           active
-                            ? "bg-amber-600 text-white"
-                            : "bg-amber-100 text-amber-900 hover:bg-amber-200",
-                          isFocusVisible && "ring-2 ring-blue-400",
+                            ? ["bg-amber-600", "text-white"]
+                            : [
+                                "bg-amber-100",
+                                "text-amber-900",
+                                "hover:bg-amber-200",
+                              ],
+                          isFocusVisible && ["ring-2", "ring-blue-400"],
                         )
                       }
                     >
                       #{p.number} {describePosition(p.position)}
                     </Button>
                   )}
-                  <span className="font-medium text-gray-700">
+                  <span className={clsx("font-medium", "text-gray-700")}>
                     {c.authorName ?? c.authorEmail}
                   </span>
                 </span>
@@ -115,23 +150,43 @@ export function CommentThread({
           e.preventDefault();
           if (body.trim()) m.mutate();
         }}
-        className="mt-4 space-y-2"
+        className={clsx("mt-4", "space-y-2")}
       >
         {draft ? (
-          <div className="flex items-center justify-between gap-2 rounded bg-blue-50 px-2 py-1 text-xs text-blue-900">
+          <div
+            className={clsx(
+              "flex",
+              "items-center",
+              "justify-between",
+              "gap-2",
+              "rounded",
+              "bg-blue-50",
+              "px-2",
+              "py-1",
+              "text-xs",
+              "text-blue-900",
+            )}
+          >
             <span>
               位置: <strong>{describePosition(draft)}</strong>
               へのコメント
             </span>
             <Button
               onPress={onClearDraft}
-              className="rounded px-1.5 text-blue-700 hover:bg-blue-100"
+              className={clsx(
+                "rounded",
+                "px-1.5",
+                "text-blue-700",
+                "hover:bg-blue-100",
+              )}
             >
               解除
             </Button>
           </div>
         ) : (
-          kind && <p className="text-xs text-gray-500">{HINTS[kind]}</p>
+          kind && (
+            <p className={clsx("text-xs", "text-gray-500")}>{HINTS[kind]}</p>
+          )
         )}
         <textarea
           value={body}
@@ -143,14 +198,31 @@ export function CommentThread({
               ? `${describePosition(draft)} へのコメント`
               : "ファイル全体へのコメント"
           }
-          className="w-full rounded border border-gray-300 p-2 text-sm"
+          className={clsx(
+            "w-full",
+            "rounded",
+            "border",
+            "border-gray-300",
+            "p-2",
+            "text-sm",
+          )}
         />
-        {m.isError && <p className="text-xs text-red-600">{m.error.message}</p>}
+        {m.isError && (
+          <p className={clsx("text-xs", "text-red-600")}>{m.error.message}</p>
+        )}
         <div className="text-right">
           <button
             type="submit"
             disabled={m.isPending || !body.trim()}
-            className="rounded bg-gray-800 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+            className={clsx(
+              "rounded",
+              "bg-gray-800",
+              "px-3",
+              "py-1.5",
+              "text-sm",
+              "text-white",
+              "disabled:opacity-50",
+            )}
           >
             投稿
           </button>

@@ -1,3 +1,4 @@
+import { clsx } from "clsx";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { createWebhook } from "@/api/webhooks";
@@ -30,8 +31,19 @@ export function WebhookForm() {
     );
 
   return (
-    <section className="rounded border border-gray-200 bg-white p-4 text-sm">
-      <h2 className="mb-3 font-semibold text-gray-700">Webhook を登録</h2>
+    <section
+      className={clsx(
+        "rounded",
+        "border",
+        "border-gray-200",
+        "bg-white",
+        "p-4",
+        "text-sm",
+      )}
+    >
+      <h2 className={clsx("mb-3", "font-semibold", "text-gray-700")}>
+        Webhook を登録
+      </h2>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -47,7 +59,14 @@ export function WebhookForm() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://example.com/hooks/bucketeye"
-            className="mt-1 w-full rounded border border-gray-300 p-2"
+            className={clsx(
+              "mt-1",
+              "w-full",
+              "rounded",
+              "border",
+              "border-gray-300",
+              "p-2",
+            )}
           />
         </label>
         <label className="block">
@@ -55,13 +74,23 @@ export function WebhookForm() {
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="mt-1 w-full rounded border border-gray-300 p-2"
+            className={clsx(
+              "mt-1",
+              "w-full",
+              "rounded",
+              "border",
+              "border-gray-300",
+              "p-2",
+            )}
           />
         </label>
         <fieldset>
           <legend className="text-gray-700">イベント</legend>
           {WEBHOOK_EVENTS.map((ev) => (
-            <label key={ev} className="mr-4 inline-flex items-center gap-1">
+            <label
+              key={ev}
+              className={clsx("mr-4", "inline-flex", "items-center", "gap-1")}
+            >
               <input
                 type="checkbox"
                 checked={events.includes(ev)}
@@ -74,21 +103,49 @@ export function WebhookForm() {
         <button
           type="submit"
           disabled={m.isPending || events.length === 0}
-          className="rounded bg-gray-800 px-3 py-1.5 text-white disabled:opacity-50"
+          className={clsx(
+            "rounded",
+            "bg-gray-800",
+            "px-3",
+            "py-1.5",
+            "text-white",
+            "disabled:opacity-50",
+          )}
         >
           登録
         </button>
-        {m.isError && <p className="text-xs text-red-600">{m.error.message}</p>}
+        {m.isError && (
+          <p className={clsx("text-xs", "text-red-600")}>{m.error.message}</p>
+        )}
       </form>
       {created && (
-        <div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3">
-          <p className="font-medium text-amber-900">
+        <div
+          className={clsx(
+            "mt-4",
+            "rounded",
+            "border",
+            "border-amber-200",
+            "bg-amber-50",
+            "p-3",
+          )}
+        >
+          <p className={clsx("font-medium", "text-amber-900")}>
             署名用シークレット（この画面を閉じると二度と表示されません）
           </p>
-          <code className="mt-1 block break-all rounded bg-white p-2 text-xs">
+          <code
+            className={clsx(
+              "mt-1",
+              "block",
+              "break-all",
+              "rounded",
+              "bg-white",
+              "p-2",
+              "text-xs",
+            )}
+          >
             {created.secret}
           </code>
-          <p className="mt-1 text-xs text-amber-800">
+          <p className={clsx("mt-1", "text-xs", "text-amber-800")}>
             配送には{" "}
             <code>
               X-Bucketeye-Signature: sha256=&lt;HMAC-SHA256(secret, body)&gt;

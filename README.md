@@ -210,6 +210,8 @@ S3_TEST_ENDPOINT=http://localhost:9000 S3_TEST_ACCESS_KEY_ID=rustfsadmin S3_TEST
 npm run typecheck            # web / server の 2 プロジェクト
 npm run format               # Prettier（設定は .prettierrc.json。VS Code の formatOnSave と同じ）
 npm run format:check
+npm run lint                 # ESLint（Tailwind のクラスを clsx で 1 つずつ書く、など）
+npm run lint:fix             # 自動修正。clsx の import は足されないので、後で npm run typecheck を通す
 npm run build                # dist/web（Vite）+ dist/server.js（esbuild、依存同梱）
 ```
 
@@ -222,6 +224,8 @@ npm run api -- -P /api/v1/admin/storage/submissions/2026-10-issue/cover.png -H "
 ```
 
 S3 と SQLite（`DATA_DIR`）は本物を使うので、稼働中のサーバと同じ状態が見えます。本番のコンテナには Hono CLI もソースも入っていないので、稼働中のサーバには同じパスを curl で叩いてください。
+
+Tailwind のクラスは `className="a b c"` と並べず、`clsx("a", "b", "c")` と 1 つずつ書きます（[eslint-plugin-classnames](https://github.com/fsubal/eslint-plugin-classnames)）。ESLint のパーサは Babel です。typescript-eslint がまだ TypeScript 7 に対応していないためで、型の検査は `npm run typecheck` が担います。
 
 コードの書式は Prettier に任せています。VS Code は保存時に、Claude Code は編集のたびに（`.claude/settings.json` の PostToolUse フックで）同じ `.prettierrc.json` で整形するので、どちらが書いても差分が出ません。
 

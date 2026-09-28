@@ -1,3 +1,4 @@
+import { clsx } from "clsx";
 import type { Preview as PreviewData } from "@/api/objects";
 import type {
   Position,
@@ -65,14 +66,24 @@ export function Preview({
       return <TextAnnotator objectKey={object.key} {...annotation} />;
     default:
       return (
-        <div className="p-10 text-center text-sm text-gray-600">
+        <div
+          className={clsx("p-10", "text-center", "text-sm", "text-gray-600")}
+        >
           <p>
             この形式（{object.contentType ?? "不明"}
             ）はブラウザでプレビューできません。
           </p>
           <a
             href={preview.downloadUrl}
-            className="mt-3 inline-block rounded bg-gray-800 px-3 py-1.5 text-white"
+            className={clsx(
+              "mt-3",
+              "inline-block",
+              "rounded",
+              "bg-gray-800",
+              "px-3",
+              "py-1.5",
+              "text-white",
+            )}
           >
             ダウンロードしてレビュー
           </a>

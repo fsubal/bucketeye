@@ -56,9 +56,15 @@ export function TextAnnotator({
   }, [active?.comment.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (q.isPending)
-    return <p className="p-4 text-sm text-gray-500">読み込み中…</p>;
+    return (
+      <p className={clsx("p-4", "text-sm", "text-gray-500")}>読み込み中…</p>
+    );
   if (q.isError)
-    return <p className="p-4 text-sm text-red-700">{q.error.message}</p>;
+    return (
+      <p className={clsx("p-4", "text-sm", "text-red-700")}>
+        {q.error.message}
+      </p>
+    );
 
   const lines = q.data.text.replace(/\n$/, "").split("\n");
 
@@ -73,11 +79,28 @@ export function TextAnnotator({
 
   return (
     <div>
-      <p className="border-b border-gray-200 px-4 py-2 text-xs text-gray-600">
+      <p
+        className={clsx(
+          "border-b",
+          "border-gray-200",
+          "px-4",
+          "py-2",
+          "text-xs",
+          "text-gray-600",
+        )}
+      >
         行番号を押すとその行、Shift を押しながら押すと範囲を指定できます
       </p>
-      <div className="max-h-[70vh] overflow-auto">
-        <table className="w-full border-collapse font-mono text-sm leading-relaxed">
+      <div className={clsx("max-h-[70vh]", "overflow-auto")}>
+        <table
+          className={clsx(
+            "w-full",
+            "border-collapse",
+            "font-mono",
+            "text-sm",
+            "leading-relaxed",
+          )}
+        >
           <tbody>
             {lines.map((line, i) => {
               const n = i + 1;
@@ -98,21 +121,37 @@ export function TextAnnotator({
                         : numbers && "bg-amber-50",
                   )}
                 >
-                  <td className="w-px align-top whitespace-nowrap select-none">
+                  <td
+                    className={clsx(
+                      "w-px",
+                      "align-top",
+                      "whitespace-nowrap",
+                      "select-none",
+                    )}
+                  >
                     <Button
                       aria-label={`${n} 行目を指定`}
                       onPress={(e) => select(n, e.shiftKey)}
                       className={({ isFocusVisible }) =>
                         clsx(
-                          "block w-full px-3 text-right text-xs text-gray-400 outline-none hover:text-gray-800",
-                          isFocusVisible && "ring-2 ring-blue-400",
+                          "block",
+                          "w-full",
+                          "px-3",
+                          "text-right",
+                          "text-xs",
+                          "text-gray-400",
+                          "outline-none",
+                          "hover:text-gray-800",
+                          isFocusVisible && ["ring-2", "ring-blue-400"],
                         )
                       }
                     >
                       {n}
                     </Button>
                   </td>
-                  <td className="w-px align-top whitespace-nowrap">
+                  <td
+                    className={clsx("w-px", "align-top", "whitespace-nowrap")}
+                  >
                     {numbers?.map((num) => {
                       const c = ranges.find((r) => r.number === num)!;
                       return (
@@ -120,14 +159,24 @@ export function TextAnnotator({
                           key={num}
                           aria-label={`コメント #${num}`}
                           onPress={() => onActivate(c.comment.id)}
-                          className="mr-1 rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold text-white"
+                          className={clsx(
+                            "mr-1",
+                            "rounded-full",
+                            "bg-amber-500",
+                            "px-1.5",
+                            "text-[10px]",
+                            "font-semibold",
+                            "text-white",
+                          )}
                         >
                           {num}
                         </Button>
                       );
                     })}
                   </td>
-                  <td className="pr-4 break-all whitespace-pre-wrap">
+                  <td
+                    className={clsx("pr-4", "break-all", "whitespace-pre-wrap")}
+                  >
                     {line || " "}
                   </td>
                 </tr>
@@ -137,7 +186,16 @@ export function TextAnnotator({
         </table>
       </div>
       {q.data.truncated && (
-        <p className="border-t border-gray-200 px-4 py-2 text-xs text-gray-500">
+        <p
+          className={clsx(
+            "border-t",
+            "border-gray-200",
+            "px-4",
+            "py-2",
+            "text-xs",
+            "text-gray-500",
+          )}
+        >
           先頭 256KB のみ表示しています
         </p>
       )}

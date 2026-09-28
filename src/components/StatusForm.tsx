@@ -1,3 +1,4 @@
+import { clsx } from "clsx";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateStatus } from "@/api/status";
 import {
@@ -35,11 +36,19 @@ export function StatusForm({ object }: { object: ReviewedObject }) {
   });
 
   return (
-    <section className="rounded border border-gray-200 bg-white p-4">
-      <h2 className="mb-2 text-sm font-semibold text-gray-700">
+    <section
+      className={clsx(
+        "rounded",
+        "border",
+        "border-gray-200",
+        "bg-white",
+        "p-4",
+      )}
+    >
+      <h2 className={clsx("mb-2", "text-sm", "font-semibold", "text-gray-700")}>
         承認ステータス
       </h2>
-      <div className="mb-3 flex items-center gap-2 text-sm">
+      <div className={clsx("mb-3", "flex", "items-center", "gap-2", "text-sm")}>
         <StatusBadge status={object.status} />
         {object.reviewer && (
           <span className="text-gray-500">
@@ -47,7 +56,7 @@ export function StatusForm({ object }: { object: ReviewedObject }) {
           </span>
         )}
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className={clsx("flex", "flex-wrap", "gap-2")}>
         {ACTIONS.filter((a) => a.status !== object.status).map((a) => (
           <button
             key={a.status}
@@ -61,7 +70,9 @@ export function StatusForm({ object }: { object: ReviewedObject }) {
         ))}
       </div>
       {m.isError && (
-        <p className="mt-2 text-xs text-red-600">{m.error.message}</p>
+        <p className={clsx("mt-2", "text-xs", "text-red-600")}>
+          {m.error.message}
+        </p>
       )}
     </section>
   );

@@ -42,23 +42,54 @@ export function PdfAnnotator({
         key={openPage ?? 0}
         src={openPage ? `${src}#page=${openPage}` : src}
         title={title}
-        className="h-[75vh] w-full"
+        className={clsx("h-[75vh]", "w-full")}
       />
-      <div className="flex flex-wrap items-center gap-2 border-t border-gray-200 bg-white p-3 text-xs text-gray-600">
+      <div
+        className={clsx(
+          "flex",
+          "flex-wrap",
+          "items-center",
+          "gap-2",
+          "border-t",
+          "border-gray-200",
+          "bg-white",
+          "p-3",
+          "text-xs",
+          "text-gray-600",
+        )}
+      >
         <NumberField
           value={page}
           onChange={(n) => setPage(Number.isFinite(n) ? n : 1)}
           minValue={1}
           step={1}
-          className="flex items-center gap-2"
+          className={clsx("flex", "items-center", "gap-2")}
         >
           <Label>ページ</Label>
-          <Group className="flex rounded border border-gray-300 focus-within:ring-2 focus-within:ring-blue-400">
-            <Button slot="decrement" className="px-2 text-gray-600">
+          <Group
+            className={clsx(
+              "flex",
+              "rounded",
+              "border",
+              "border-gray-300",
+              "focus-within:ring-2",
+              "focus-within:ring-blue-400",
+            )}
+          >
+            <Button slot="decrement" className={clsx("px-2", "text-gray-600")}>
               −
             </Button>
-            <Input className="w-12 border-x border-gray-300 px-1 text-center outline-none" />
-            <Button slot="increment" className="px-2 text-gray-600">
+            <Input
+              className={clsx(
+                "w-12",
+                "border-x",
+                "border-gray-300",
+                "px-1",
+                "text-center",
+                "outline-none",
+              )}
+            />
+            <Button slot="increment" className={clsx("px-2", "text-gray-600")}>
               ＋
             </Button>
           </Group>
@@ -67,8 +98,16 @@ export function PdfAnnotator({
           onPress={() => onDraftChange({ kind: "page", page })}
           className={({ isFocusVisible }) =>
             clsx(
-              "rounded border border-gray-300 bg-white px-2 py-1 text-gray-800 outline-none hover:bg-gray-100",
-              isFocusVisible && "ring-2 ring-blue-400",
+              "rounded",
+              "border",
+              "border-gray-300",
+              "bg-white",
+              "px-2",
+              "py-1",
+              "text-gray-800",
+              "outline-none",
+              "hover:bg-gray-100",
+              isFocusVisible && ["ring-2", "ring-blue-400"],
             )
           }
         >

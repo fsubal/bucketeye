@@ -1,3 +1,4 @@
+import { clsx } from "clsx";
 import type { QueryClient } from "@tanstack/react-query";
 import {
   createRootRouteWithContext,
@@ -60,7 +61,9 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
     );
   },
   notFoundComponent: () => (
-    <p className="p-6 text-sm text-gray-500">ページが見つかりません</p>
+    <p className={clsx("p-6", "text-sm", "text-gray-500")}>
+      ページが見つかりません
+    </p>
   ),
 });
 
@@ -103,7 +106,7 @@ const authRoute = createRoute({
     }
   },
   pendingComponent: () => (
-    <p className="p-6 text-sm text-gray-500">読み込み中…</p>
+    <p className={clsx("p-6", "text-sm", "text-gray-500")}>読み込み中…</p>
   ),
   errorComponent: AuthError,
   component: function AuthLayout() {
@@ -121,7 +124,9 @@ function AuthError({ error }: ErrorComponentProps) {
   }
 
   const message = error instanceof Error ? error.message : String(error);
-  return <p className="p-6 text-sm text-red-700">エラー: {message}</p>;
+  return (
+    <p className={clsx("p-6", "text-sm", "text-red-700")}>エラー: {message}</p>
+  );
 }
 
 const indexRoute = createRoute({

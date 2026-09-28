@@ -56,13 +56,24 @@ export function MediaAnnotator({
               : null,
           )
         }
-        className={clsx("w-full", kind === "video" && "max-h-[70vh] bg-black")}
+        className={clsx(
+          "w-full",
+          kind === "video" && ["max-h-[70vh]", "bg-black"],
+        )}
       />
 
-      <div className="space-y-2 border-t border-gray-200 bg-white p-3">
+      <div
+        className={clsx(
+          "space-y-2",
+          "border-t",
+          "border-gray-200",
+          "bg-white",
+          "p-3",
+        )}
+      >
         {duration !== null && (times.length > 0 || draftTime) && (
           <div
-            className="relative h-5 rounded bg-gray-100"
+            className={clsx("relative", "h-5", "rounded", "bg-gray-100")}
             aria-label="コメントの時刻"
           >
             {times.map(({ comment, position, number }) => {
@@ -78,9 +89,22 @@ export function MediaAnnotator({
                   style={{ left: at(position.start) }}
                   className={({ isFocusVisible }) =>
                     clsx(
-                      "absolute top-0 flex h-5 min-w-5 -translate-x-1/2 items-center justify-center rounded-full px-1 text-[10px] font-semibold text-white outline-none",
+                      "absolute",
+                      "top-0",
+                      "flex",
+                      "h-5",
+                      "min-w-5",
+                      "-translate-x-1/2",
+                      "items-center",
+                      "justify-center",
+                      "rounded-full",
+                      "px-1",
+                      "text-[10px]",
+                      "font-semibold",
+                      "text-white",
+                      "outline-none",
                       isActive ? "bg-amber-600" : "bg-amber-500",
-                      isFocusVisible && "ring-2 ring-blue-400",
+                      isFocusVisible && ["ring-2", "ring-blue-400"],
                     )
                   }
                 >
@@ -91,13 +115,29 @@ export function MediaAnnotator({
             {draftTime && (
               <span
                 style={{ left: at(draftTime.start) }}
-                className="absolute top-0 h-5 w-0.5 -translate-x-1/2 bg-blue-600"
+                className={clsx(
+                  "absolute",
+                  "top-0",
+                  "h-5",
+                  "w-0.5",
+                  "-translate-x-1/2",
+                  "bg-blue-600",
+                )}
                 aria-hidden
               />
             )}
           </div>
         )}
-        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+        <div
+          className={clsx(
+            "flex",
+            "flex-wrap",
+            "items-center",
+            "gap-2",
+            "text-xs",
+            "text-gray-600",
+          )}
+        >
           <Button
             onPress={() =>
               onDraftChange({
@@ -107,8 +147,16 @@ export function MediaAnnotator({
             }
             className={({ isFocusVisible }) =>
               clsx(
-                "rounded border border-gray-300 bg-white px-2 py-1 text-gray-800 outline-none hover:bg-gray-100",
-                isFocusVisible && "ring-2 ring-blue-400",
+                "rounded",
+                "border",
+                "border-gray-300",
+                "bg-white",
+                "px-2",
+                "py-1",
+                "text-gray-800",
+                "outline-none",
+                "hover:bg-gray-100",
+                isFocusVisible && ["ring-2", "ring-blue-400"],
               )
             }
           >
