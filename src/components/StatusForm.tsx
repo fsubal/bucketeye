@@ -63,7 +63,14 @@ export function StatusForm({ object }: { object: ReviewedObject }) {
             type="button"
             disabled={m.isPending}
             onClick={() => m.mutate(a.status)}
-            className={`rounded px-3 py-1.5 text-sm disabled:opacity-50 ${a.className}`}
+            className={clsx(
+              "rounded",
+              "px-3",
+              "py-1.5",
+              "text-sm",
+              "disabled:opacity-50",
+              a.className,
+            )}
           >
             {REVIEW_STATUS_LABELS[a.status]}
           </button>

@@ -82,7 +82,14 @@ function WebhookRow({ webhook }: { webhook: WebhookPublic }) {
 
   return (
     <section
-      className={`rounded border bg-white p-4 text-sm ${webhook.active ? "border-gray-200" : "border-gray-200 opacity-60"}`}
+      className={clsx(
+        "rounded",
+        "border",
+        "bg-white",
+        "p-4",
+        "text-sm",
+        webhook.active ? "border-gray-200" : ["border-gray-200", "opacity-60"],
+      )}
     >
       <div
         className={clsx(

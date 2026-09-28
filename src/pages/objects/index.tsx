@@ -152,7 +152,14 @@ export default function ObjectsIndex({
         <Link
           to="/objects"
           search={searchFor({ status: null })}
-          className={`rounded px-3 py-1 ${status ? "border border-gray-300 bg-white" : "bg-gray-800 text-white"}`}
+          className={clsx(
+            "rounded",
+            "px-3",
+            "py-1",
+            status
+              ? ["border", "border-gray-300", "bg-white"]
+              : ["bg-gray-800", "text-white"],
+          )}
         >
           すべて {total}
         </Link>
@@ -161,7 +168,14 @@ export default function ObjectsIndex({
             key={s}
             to="/objects"
             search={searchFor({ status: s })}
-            className={`rounded px-3 py-1 ${status === s ? "bg-gray-800 text-white" : "border border-gray-300 bg-white"}`}
+            className={clsx(
+              "rounded",
+              "px-3",
+              "py-1",
+              status === s
+                ? ["bg-gray-800", "text-white"]
+                : ["border", "border-gray-300", "bg-white"],
+            )}
           >
             {REVIEW_STATUS_LABELS[s]} {data.counts[s] ?? 0}
           </Link>
