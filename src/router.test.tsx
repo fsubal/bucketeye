@@ -236,3 +236,45 @@ describe("検索パラメータ", () => {
     );
   });
 });
+
+describe("<title>（ルートの head）", () => {
+  test.each([
+    ["/objects", "reviewer", "一覧 — bucketeye"],
+    [
+      "/objects?prefix=a%2F&status=approved",
+      "reviewer",
+      "承認 · a/ — bucketeye",
+    ],
+    [
+      "/objects/submissions/2026%20issue/cover.png",
+      "reviewer",
+      "cover.png — bucketeye",
+    ],
+    ["/whoami", "reviewer", "whoami — bucketeye"],
+    ["/webhooks", "admin", "Webhook — bucketeye"],
+    ["/no/such/page", "reviewer", "bucketeye"],
+  ] as const)("%s → %s", async (path, role, title) => {
+    stubApi(() => json(me(role)));
+    renderAt(path);
+    await waitFor(() => expect(document.title).toBe(title));
+    // React 19 が <head> に移すので、<title> は head に 1 つだけで body には無い
+    expect(document.head.querySelectorAll("title")).toHaveLength(1);
+    expect(document.body.querySelector("title")).toBeNull();
+  });
+
+  test("ログイン画面", async () => {
+    stubApi(() =>
+      json(
+        {
+          type: "x",
+          title: "Authentication required",
+          status: 401,
+          loginPath: "/dev/login",
+        },
+        401,
+      ),
+    );
+    renderAt("/objects");
+    await waitFor(() => expect(document.title).toBe("ログイン — bucketeye"));
+  });
+});

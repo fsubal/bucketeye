@@ -3,6 +3,7 @@ import {
   createRootRouteWithContext,
   createRoute,
   createRouter,
+  HeadContent,
   Navigate,
   Outlet,
   redirect,
@@ -20,18 +21,44 @@ import ObjectsIndex, { ObjectsSearch } from "@/pages/objects/index";
 import ObjectsShow from "@/pages/objects/show";
 import WebhooksIndex from "@/pages/webhooks/index";
 import WhoamiShow from "@/pages/whoami/show";
+import { nameOf, REVIEW_STATUS_LABELS } from "@/domains/ReviewedObject/model";
 import { HttpError } from "@/utils/http";
 
 /**
  * ルーティング（TanStack Router、コードで定義）。
  * 画面そのものは src/pages に置き、ここではパス・検索パラメータ・認証のガードだけを決める。
  * ファイルベースのルーティングにしないのは、src/pages の命名（objects/index.tsx, objects/show.tsx）を保つため
+ *
+ * <title> は各ルートの head で決める（TanStack Router の head 管理）。一番深いルートの title が使われ、
+ * 書いていないルートはルートのルートの "bucketeye" になる。
+ * HeadContent は普通の <title> を描画し、React 19 がそれを <head> に移す
  */
 
 export type RouterContext = { queryClient: QueryClient };
 
+const APP_NAME = "bucketeye";
+
+/** "cover.png" → "cover.png — bucketeye" */
+export function pageTitle(...parts: Array<string | null | undefined>): string {
+  return [...parts.filter((p): p is string => Boolean(p)), APP_NAME].join(
+    " — ",
+  );
+}
+
+const titleMeta = (...parts: Array<string | null | undefined>) => ({
+  meta: [{ title: pageTitle(...parts) }],
+});
+
 const rootRoute = createRootRouteWithContext<RouterContext>()({
-  component: Outlet,
+  head: () => titleMeta(),
+  component: function Root() {
+    return (
+      <>
+        <HeadContent />
+        <Outlet />
+      </>
+    );
+  },
   notFoundComponent: () => (
     <p className="p-6 text-sm text-gray-500">ページが見つかりません</p>
   ),
@@ -41,6 +68,7 @@ const devLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/dev/login",
   validateSearch: DevLoginSearch,
+  head: () => titleMeta("ログイン"),
   component: function DevLoginRoute() {
     return (
       <Layout me={null}>
@@ -116,6 +144,14 @@ const objectsIndexRoute = createRoute({
   validateSearch: ObjectsSearch,
   // 既定値（prefix=""、page=1）は URL に出さない
   search: { middlewares: [stripSearchParams({ prefix: "", page: 1 })] },
+  // "2026-10-issue/ — bucketeye"、ステータスで絞っているときは "承認 · 2026-10-issue/ — bucketeye"
+  head: ({ match }) => {
+    const { prefix, status } = match.search;
+    const where = prefix || "一覧";
+    return titleMeta(
+      status ? `${REVIEW_STATUS_LABELS[status]} · ${where}` : where,
+    );
+  },
   component: function ObjectsIndexRoute() {
     return (
       <ObjectsIndex
@@ -130,6 +166,8 @@ const objectsIndexRoute = createRoute({
 const objectsShowRoute = createRoute({
   getParentRoute: () => objectsRoute,
   path: "$",
+  // API の応答を待たず、キーの最後の部分（ファイル名）を題名にする
+  head: ({ params }) => titleMeta(params._splat ? nameOf(params._splat) : null),
   component: function ObjectsShowRoute() {
     const { _splat } = objectsShowRoute.useParams();
     return <ObjectsShow objectKey={_splat ?? ""} />;
@@ -139,6 +177,7 @@ const objectsShowRoute = createRoute({
 const whoamiRoute = createRoute({
   getParentRoute: () => authRoute,
   path: "/whoami",
+  head: () => titleMeta("whoami"),
   component: function WhoamiRoute() {
     return <WhoamiShow me={useCurrentMe()} />;
   },
@@ -147,6 +186,7 @@ const whoamiRoute = createRoute({
 const webhooksRoute = createRoute({
   getParentRoute: () => authRoute,
   path: "/webhooks",
+  head: () => titleMeta("Webhook"),
   // admin 以外は一覧へ戻す（API 側でも 403 になる）
   beforeLoad: ({ context }) => {
     if (context.me.identity.role !== "admin") {

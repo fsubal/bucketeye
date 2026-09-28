@@ -23,7 +23,6 @@ export default function ObjectsShow({ objectKey: key }: { objectKey: string }) {
 
   return (
     <>
-      <title>{`${object.name} — bucketeye`}</title>
       <div className="mb-4 text-sm">
         <Link to="/objects" className="text-blue-700 hover:underline">
           一覧
