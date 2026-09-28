@@ -620,3 +620,87 @@ describe("位置指定コメント", () => {
     expect(await t.commentStore.list(key)).toEqual([]);
   });
 });
+
+describe("GET /files/*（PDF.js 用にアプリ経由で中身を返す）", () => {
+  test("中身と Content-Type をそのまま返し、PDF の詳細には fileUrl が付く", async () => {
+    const res = await t.app.request("/api/v1/files/submissions/2026/body.pdf", {
+      headers: auth,
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toBe("application/pdf");
+    expect(res.headers.get("Content-Length")).toBe("3");
+    expect(await res.text()).toBe("PDF");
+
+    const show = (await (
+      await t.app.request("/api/v1/objects/submissions/2026/body.pdf", {
+        headers: auth,
+      })
+    ).json()) as any;
+    expect(show.preview.fileUrl).toBe(
+      "/api/v1/files/submissions/2026/body.pdf",
+    );
+  });
+
+  test("# や空白を含むキーも区切りごとにエンコードして往復できる", async () => {
+    t.s3.put("submissions/a b/#1?.pdf", "X", {
+      contentType: "application/pdf",
+    });
+    const show = (await (
+      await t.app.request(
+        `/api/v1/objects/submissions/a%20b/${encodeURIComponent("#1?.pdf")}`,
+        { headers: auth },
+      )
+    ).json()) as any;
+    expect(show.preview.fileUrl).toBe(
+      "/api/v1/files/submissions/a%20b/%231%3F.pdf",
+    );
+    const res = await t.app.request(show.preview.fileUrl, { headers: auth });
+    expect(await res.text()).toBe("X");
+  });
+
+  test("未認証は 401、対象外・存在しないキーは 404", async () => {
+    expect(
+      (await t.app.request("/api/v1/files/submissions/2026/body.pdf")).status,
+    ).toBe(401);
+    expect(
+      (await t.app.request("/api/v1/files/other/secret.txt", { headers: auth }))
+        .status,
+    ).toBe(404);
+    expect(
+      (
+        await t.app.request("/api/v1/files/submissions/none.pdf", {
+          headers: auth,
+        })
+      ).status,
+    ).toBe(404);
+  });
+
+  test("PDF にページ内の範囲付きのコメントを付けられる", async () => {
+    const res = await t.app.request(
+      "/api/v1/comments/submissions/2026/body.pdf",
+      {
+        method: "POST",
+        ...json(
+          {
+            body: "余白",
+            selector: {
+              type: "FragmentSelector",
+              value: "page=1",
+              refinedBy: {
+                type: "FragmentSelector",
+                value: "xywh=percent:5,5,20,10",
+              },
+            },
+          },
+          auth,
+        ),
+      },
+    );
+    expect(res.status).toBe(201);
+    const [a] = await t.commentStore.list("submissions/2026/body.pdf");
+    expect(a?.target.selector).toMatchObject({
+      value: "page=1",
+      refinedBy: { value: "xywh=percent:5,5,20,10" },
+    });
+  });
+});

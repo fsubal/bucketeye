@@ -23,6 +23,12 @@ export type HeadResult = {
   lastModified: Temporal.Instant | null;
 };
 
+export type ObjectStream = {
+  body: ReadableStream<Uint8Array>;
+  contentType: string | null;
+  contentLength: number | null;
+};
+
 export interface S3Port {
   readonly bucket: string;
   readonly reviewBucket: string;
@@ -46,6 +52,8 @@ export interface S3Port {
     maxBytes: number,
     bucket?: string,
   ): Promise<Uint8Array | null>;
+  /** オブジェクト全体をストリームで開く（PDF をアプリ経由で配るとき用）。無ければ null */
+  openStream(key: string, bucket?: string): Promise<ObjectStream | null>;
   getJson(key: string, bucket?: string): Promise<unknown | null>;
   putJson(key: string, payload: unknown, bucket?: string): Promise<void>;
   putObject(

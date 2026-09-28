@@ -103,12 +103,16 @@ export function objectsRoutes() {
       object.kind === "audio"
     )
       preview["url"] = await deps.s3.presign(key);
-    if (object.kind === "pdf")
+    if (object.kind === "pdf") {
       preview["url"] = await deps.s3.presign(key, {
         contentType: "application/pdf",
       });
+      // PDF.js は fetch で読むので、presigned URL（別オリジン）だとバケットの CORS 設定が要る。
+      // 導入時の設定を増やさないよう、同じオリジンの /files から配る
+      preview["fileUrl"] = apiPath("/api/v1/files/", key);
+    }
     if (object.kind === "text")
-      preview["textUrl"] = `/api/v1/texts/${encodeURI(key)}`;
+      preview["textUrl"] = apiPath("/api/v1/texts/", key);
     return c.json({ object, comments, preview });
   });
 
@@ -133,6 +137,28 @@ export function textsRoutes() {
       object && (object.size ?? 0) > TEXT_PREVIEW_BYTES ? "true" : "false",
     );
     return c.text(new TextDecoder("utf-8", { fatal: false }).decode(bytes));
+  });
+  return r;
+}
+
+/**
+ * GET /files/*  — オブジェクトの中身をアプリ経由で返す（PDF.js 用）。S3 からストリームのまま流すので、メモリに溜めない。
+ * 認証は他の API と同じ。対象は TARGET_PREFIX 以下だけ
+ */
+export function filesRoutes() {
+  const r = new Hono<AppEnv>();
+  r.get("/*", async (c) => {
+    const { s3 } = c.get("deps");
+    const key = targetKey(c, "/api/v1/files/");
+    const file = await s3.openStream(key);
+    if (!file) throw HttpProblem.notFound();
+    c.header("Content-Type", file.contentType ?? "application/octet-stream");
+    if (file.contentLength !== null)
+      c.header("Content-Length", String(file.contentLength));
+    c.header("Content-Disposition", "inline");
+    c.header("Cache-Control", "private, max-age=60");
+    c.header("X-Content-Type-Options", "nosniff");
+    return c.body(file.body);
   });
   return r;
 }
@@ -247,6 +273,11 @@ function normalizeSelector(
     ]);
   }
   return toSelector(position);
+}
+
+/** キーを API のパスに埋める（スラッシュは残し、それ以外を区切りごとにエンコード。# や ? を含むキーでも壊れない） */
+function apiPath(prefix: string, key: string): string {
+  return prefix + key.split("/").map(encodeURIComponent).join("/");
 }
 
 /** パスからキーを取り出し、対象範囲（TARGET_PREFIX 以下、サイドカー以外）か確かめる */

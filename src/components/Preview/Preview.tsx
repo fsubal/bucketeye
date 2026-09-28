@@ -1,4 +1,5 @@
 import { clsx } from "clsx";
+import { lazy, Suspense } from "react";
 import type { Preview as PreviewData } from "@/api/objects";
 import type {
   Position,
@@ -7,8 +8,10 @@ import type {
 import type { ReviewedObject } from "@/domains/ReviewedObject/model";
 import { ImageAnnotator } from "./ImageAnnotator";
 import { MediaAnnotator } from "./MediaAnnotator";
-import { PdfAnnotator } from "./PdfAnnotator";
 import { TextAnnotator } from "./TextAnnotator";
+
+// PDF.js（worker を含めて 1MB 以上）は PDF を開いたときだけ読み込む
+const PdfAnnotator = lazy(() => import("./PdfAnnotator"));
 
 /**
  * 位置指定コメントのためにプレビューが受け取るもの。状態は詳細ページ（pages/objects/show.tsx）が持ち、
@@ -56,11 +59,19 @@ export function Preview({
       );
     case "pdf":
       return (
-        <PdfAnnotator
-          src={preview.url ?? ""}
-          title={object.name}
-          {...annotation}
-        />
+        <Suspense
+          fallback={
+            <p className={clsx("p-6", "text-sm", "text-gray-500")}>
+              PDF ビューアを読み込み中…
+            </p>
+          }
+        >
+          <PdfAnnotator
+            fileUrl={preview.fileUrl ?? preview.url ?? ""}
+            downloadUrl={preview.downloadUrl}
+            {...annotation}
+          />
+        </Suspense>
       );
     case "text":
       return <TextAnnotator objectKey={object.key} {...annotation} />;

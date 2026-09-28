@@ -33,6 +33,7 @@
     "clsx": "^2.1.1",
     "hono": "^4.13.9",
     "jose": "^6.2.12",
+    "pdfjs-dist": "^6.3.289",
     "react": "^19.3.0",
     "react-aria-components": "^1.21.1",
     "react-dom": "^19.3.0",

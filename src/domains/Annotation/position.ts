@@ -10,15 +10,18 @@ import type { Comment, FragmentSelector, Selector } from "./model";
  * |--------|--------------|-------------------------------|------------------------------------|
  * | region | 画像         | `xywh=percent:10,20,30,40`    | Media Fragments（W3C）             |
  * | time   | 動画・音声   | `t=65.2` / `t=65.2,70`        | Media Fragments（W3C）             |
- * | page   | PDF          | `page=3`                      | RFC 8118（PDF の fragment）        |
+ * | page   | PDF          | `page=3`（範囲は refinedBy）  | RFC 8118（PDF の fragment）        |
  * | lines  | テキスト     | `line=9,12`（10〜12 行目）    | RFC 5147（text/plain の fragment） |
  *
- * 画像の範囲を百分率で持つのは、表示サイズや元画像の解像度に左右されないようにするため
+ * 画像の範囲を百分率で持つのは、表示サイズや元画像の解像度に左右されないようにするため。
+ * PDF のページ内の範囲は、page= の FragmentSelector を refinedBy の xywh=percent:（ページに対する %）で絞り込む
  */
+export type Region = { x: number; y: number; w: number; h: number };
+
 export type Position =
-  | { kind: "region"; x: number; y: number; w: number; h: number }
+  | ({ kind: "region" } & Region)
   | { kind: "time"; start: number; end?: number }
-  | { kind: "page"; page: number }
+  | { kind: "page"; page: number; region?: Region }
   | { kind: "lines"; from: number; to: number };
 
 export type PositionKind = Position["kind"];
@@ -47,14 +50,16 @@ export function isPositionAllowed(kind: ObjectKind, p: Position): boolean {
 /** 小数は 2 桁まで（百分率・秒の精度として十分で、JSON が読みやすい） */
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+const regionSelector = (r: Region) => ({
+  type: "FragmentSelector" as const,
+  conformsTo: MEDIA_FRAGMENTS,
+  value: `xywh=percent:${[r.x, r.y, r.w, r.h].map(round2).join(",")}`,
+});
+
 export function toSelector(p: Position): z.infer<typeof FragmentSelector> {
   switch (p.kind) {
     case "region":
-      return {
-        type: "FragmentSelector",
-        conformsTo: MEDIA_FRAGMENTS,
-        value: `xywh=percent:${[p.x, p.y, p.w, p.h].map(round2).join(",")}`,
-      };
+      return regionSelector(p);
     case "time":
       return {
         type: "FragmentSelector",
@@ -69,6 +74,7 @@ export function toSelector(p: Position): z.infer<typeof FragmentSelector> {
         type: "FragmentSelector",
         conformsTo: PDF_FRAGMENTS,
         value: `page=${p.page}`,
+        ...(p.region ? { refinedBy: regionSelector(p.region) } : {}),
       };
     case "lines":
       // RFC 5147 の line= は行の「境界」（0 始まり）で数えるので、1 始まりの from〜to 行目は line=from-1,to
@@ -82,6 +88,21 @@ export function toSelector(p: Position): z.infer<typeof FragmentSelector> {
 
 const NUM = String.raw`(\d+(?:\.\d+)?)`;
 const EPS = 0.01;
+const REGION = new RegExp(`^xywh=percent:${NUM},${NUM},${NUM},${NUM}$`);
+
+/** `xywh=percent:x,y,w,h` を読む。はみ出し・大きさ 0 は null */
+function parseRegion(value: string): Region | null {
+  const m = REGION.exec(value.trim());
+  if (!m) return null;
+  const [x, y, w, h] = m.slice(1).map(Number) as [
+    number,
+    number,
+    number,
+    number,
+  ];
+  const ok = w > 0 && h > 0 && x + w <= 100 + EPS && y + h <= 100 + EPS;
+  return ok ? { x, y, w, h } : null;
+}
 
 /** selector を位置に戻す。知らない形式や範囲外の値なら null（ファイル全体へのコメントとして扱う） */
 export function fromSelector(
@@ -90,19 +111,12 @@ export function fromSelector(
   if (!selector || selector.type !== "FragmentSelector") return null;
   const v = selector.value.trim();
 
-  let m = new RegExp(`^xywh=percent:${NUM},${NUM},${NUM},${NUM}$`).exec(v);
-  if (m) {
-    const [x, y, w, h] = m.slice(1).map(Number) as [
-      number,
-      number,
-      number,
-      number,
-    ];
-    const ok = w > 0 && h > 0 && x + w <= 100 + EPS && y + h <= 100 + EPS;
-    return ok ? { kind: "region", x, y, w, h } : null;
+  if (v.startsWith("xywh=")) {
+    const region = parseRegion(v);
+    return region ? { kind: "region", ...region } : null;
   }
 
-  m = new RegExp(`^t=(?:npt:)?${NUM}(?:,${NUM})?$`).exec(v);
+  let m = new RegExp(`^t=(?:npt:)?${NUM}(?:,${NUM})?$`).exec(v);
   if (m) {
     const start = Number(m[1]);
     if (m[2] === undefined) return { kind: "time", start };
@@ -113,7 +127,11 @@ export function fromSelector(
   m = /^page=(\d+)$/.exec(v);
   if (m) {
     const page = Number(m[1]);
-    return page >= 1 ? { kind: "page", page } : null;
+    if (page < 1) return null;
+    if (!selector.refinedBy) return { kind: "page", page };
+    // ページ内の範囲。読めなければ（壊れた範囲をページ全体と取り違えないよう）全体を無効にする
+    const region = parseRegion(selector.refinedBy.value);
+    return region ? { kind: "page", page, region } : null;
   }
 
   m = /^line=(\d+),(\d+)$/.exec(v);
@@ -146,7 +164,7 @@ export function describePosition(p: Position): string {
         ? formatTimecode(p.start)
         : `${formatTimecode(p.start)}–${formatTimecode(p.end)}`;
     case "page":
-      return `p.${p.page}`;
+      return p.region ? `p.${p.page} 範囲` : `p.${p.page}`;
     case "lines":
       return p.from === p.to ? `L${p.from}` : `L${p.from}–${p.to}`;
   }

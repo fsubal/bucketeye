@@ -1,6 +1,12 @@
 import { now, type Temporal } from "@/utils/datetime";
 import { createHash } from "node:crypto";
-import type { HeadResult, Listing, ListedObject, S3Port } from "./port";
+import type {
+  HeadResult,
+  ListedObject,
+  Listing,
+  ObjectStream,
+  S3Port,
+} from "./port";
 
 type Stored = {
   body: Uint8Array;
@@ -113,6 +119,19 @@ export class MemoryS3 implements S3Port {
           lastModified: s.lastModified,
         }
       : null;
+  }
+
+  async openStream(
+    key: string,
+    bucket = this.bucket,
+  ): Promise<ObjectStream | null> {
+    const s = this.store.get(this.k(bucket, key));
+    if (!s) return null;
+    return {
+      body: new Blob([new Uint8Array(s.body)]).stream(),
+      contentType: s.contentType,
+      contentLength: s.body.byteLength,
+    };
   }
 
   async readHead(

@@ -12,7 +12,13 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { fromDate } from "@/utils/datetime";
 import type { Config } from "../config";
-import type { HeadResult, Listing, ListedObject, S3Port } from "./port";
+import type {
+  HeadResult,
+  ListedObject,
+  Listing,
+  ObjectStream,
+  S3Port,
+} from "./port";
 
 function isNotFound(e: unknown): boolean {
   return (
@@ -115,6 +121,26 @@ export class AwsS3 implements S3Port {
         size: res.ContentLength ?? 0,
         contentType: res.ContentType ?? null,
         lastModified: res.LastModified ? fromDate(res.LastModified) : null,
+      };
+    } catch (e) {
+      if (isNotFound(e)) return null;
+      throw e;
+    }
+  }
+
+  async openStream(
+    key: string,
+    bucket = this.bucket,
+  ): Promise<ObjectStream | null> {
+    try {
+      const res = await this.client.send(
+        new GetObjectCommand({ Bucket: bucket, Key: key }),
+      );
+      if (!res.Body) return null;
+      return {
+        body: res.Body.transformToWebStream() as ReadableStream<Uint8Array>,
+        contentType: res.ContentType ?? null,
+        contentLength: res.ContentLength ?? null,
       };
     } catch (e) {
       if (isNotFound(e)) return null;

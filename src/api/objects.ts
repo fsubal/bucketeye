@@ -42,6 +42,8 @@ export const Preview = z.object({
   downloadUrl: z.string(),
   url: z.string().optional(),
   textUrl: z.string().optional(),
+  /** PDF.js で読むための同じオリジンの URL */
+  fileUrl: z.string().optional(),
 });
 export type Preview = z.infer<typeof Preview>;
 

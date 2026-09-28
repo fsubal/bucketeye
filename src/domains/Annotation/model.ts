@@ -11,10 +11,17 @@ import { Identity } from "@/domains/Identity/model";
  */
 export const ANNOTATION_CONTEXT = "http://www.w3.org/ns/anno.jsonld";
 
-export const FragmentSelector = z.object({
+const FragmentSelectorBase = z.object({
   type: z.literal("FragmentSelector"),
   conformsTo: z.string().optional(),
   value: z.string(),
+});
+/**
+ * W3C の FragmentSelector。refinedBy で、その中をさらに絞り込める（例: PDF の page=3 の中の xywh= の範囲）。
+ * 仕様上は何段でも入れ子にできるが、このアプリは 1 段だけ使う
+ */
+export const FragmentSelector = FragmentSelectorBase.extend({
+  refinedBy: FragmentSelectorBase.optional(),
 });
 export const SvgSelector = z.object({
   type: z.literal("SvgSelector"),

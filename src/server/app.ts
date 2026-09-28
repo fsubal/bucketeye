@@ -15,6 +15,7 @@ import {
   commentsRoutes,
   objectsRoutes,
   statusesRoutes,
+  filesRoutes,
   textsRoutes,
 } from "./routes/objects";
 import { webhooksRoutes } from "./routes/webhooks";
@@ -77,6 +78,7 @@ export function createApp(
   api.route("/", meRoutes());
   api.route("/objects", objectsRoutes());
   api.route("/texts", textsRoutes());
+  api.route("/files", filesRoutes());
   api.route("/comments", commentsRoutes());
   api.route("/statuses", statusesRoutes());
   api.route("/webhooks", webhooksRoutes());

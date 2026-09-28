@@ -105,3 +105,50 @@ describe("表示", () => {
     expect(describePosition({ kind: "lines", from: 4, to: 9 })).toBe("L4–9");
   });
 });
+
+describe("PDF のページ内の範囲（refinedBy）", () => {
+  const withRegion: Position = {
+    kind: "page",
+    page: 2,
+    region: { x: 10, y: 20, w: 30, h: 40 },
+  };
+
+  test("page= を xywh=percent: で絞り込む形で書き、読み戻せる", () => {
+    const selector = toSelector(withRegion);
+    expect(selector).toEqual({
+      type: "FragmentSelector",
+      conformsTo: PDF_FRAGMENTS,
+      value: "page=2",
+      refinedBy: {
+        type: "FragmentSelector",
+        conformsTo: MEDIA_FRAGMENTS,
+        value: "xywh=percent:10,20,30,40",
+      },
+    });
+    expect(fromSelector(selector)).toEqual(withRegion);
+    expect(describePosition(withRegion)).toBe("p.2 範囲");
+  });
+
+  test("範囲の無いページだけの位置は今までどおり", () => {
+    expect(toSelector({ kind: "page", page: 2 })).not.toHaveProperty(
+      "refinedBy",
+    );
+    expect(fromSelector(frag("page=2"))).toEqual({ kind: "page", page: 2 });
+  });
+
+  test("範囲が壊れていたら、ページ全体と取り違えないよう位置全体を無効にする", () => {
+    expect(
+      fromSelector({
+        ...frag("page=2", PDF_FRAGMENTS),
+        refinedBy: frag("xywh=percent:90,0,20,10", MEDIA_FRAGMENTS),
+      }),
+    ).toBeNull();
+  });
+
+  test("PDF にページ内の範囲は付けられるが、画像の範囲（ページなし）は付けられない", () => {
+    expect(isPositionAllowed("pdf", withRegion)).toBe(true);
+    expect(
+      isPositionAllowed("pdf", { kind: "region", x: 0, y: 0, w: 1, h: 1 }),
+    ).toBe(false);
+  });
+});

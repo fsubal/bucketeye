@@ -83,5 +83,13 @@ describe.skipIf(!endpoint)("AwsS3 against a real S3-compatible server", () => {
     expect(url).toContain("response-content-disposition=inline");
     expect(new TextDecoder().decode((await s3.readHead(key, 3))!)).toBe("png");
     expect(await s3.head(`${config.s3.targetPrefix}missing`)).toBeNull();
+
+    const stream = await s3.openStream(key);
+    expect(stream).toMatchObject({
+      contentType: "image/png",
+      contentLength: 9,
+    });
+    expect(await new Response(stream!.body).text()).toBe("png-bytes");
+    expect(await s3.openStream(`${config.s3.targetPrefix}missing`)).toBeNull();
   });
 });
