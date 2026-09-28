@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { z } from "zod";
 import { reindex } from "@/api/admin";
@@ -41,14 +41,9 @@ export default function ObjectsIndex({
     queryKey: ["objects", prefix, status, page],
     queryFn: () => listObjects({ prefix, status, page }),
   });
-  const qc = useQueryClient();
   const reindexM = useMutation({
     mutationFn: reindex,
-    onSuccess: () =>
-      setTimeout(
-        () => void qc.invalidateQueries({ queryKey: ["objects"] }),
-        1500,
-      ),
+    onSuccess: () => setTimeout(() => void q.refetch(), 1500),
   });
 
   /** リンク先の検索パラメータ。prefix や status を変えたらページは 1 に戻す */

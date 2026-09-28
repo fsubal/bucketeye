@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { clsx } from "clsx";
 import { useState } from "react";
 import { Button } from "react-aria-components";
@@ -30,6 +30,7 @@ export function CommentThread({
   onClearDraft,
   activeId,
   onActivate,
+  onPosted,
 }: {
   object: ReviewedObject;
   comments: Comment[];
@@ -39,9 +40,10 @@ export function CommentThread({
   onClearDraft: () => void;
   activeId: string | null;
   onActivate: (commentId: string | null) => void;
+  /** 投稿できたら呼ぶ。読み直しは詳細を取得している親が行う */
+  onPosted: () => void;
 }) {
   const [body, setBody] = useState("");
-  const qc = useQueryClient();
   const m = useMutation({
     mutationFn: () =>
       createComment(object.key, {
@@ -51,7 +53,7 @@ export function CommentThread({
     onSuccess: () => {
       setBody("");
       onClearDraft();
-      void qc.invalidateQueries({ queryKey: ["object", object.key] });
+      onPosted();
     },
   });
 

@@ -1,10 +1,11 @@
 import { clsx } from "clsx";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { createWebhook } from "@/api/webhooks";
 import { WEBHOOK_EVENTS, type WebhookEventType } from "@/domains/Webhook/model";
 
-export function WebhookForm() {
+/** onCreated は登録できたら呼ぶ。一覧の読み直しは一覧を取得している親が行う */
+export function WebhookForm({ onCreated }: { onCreated: () => void }) {
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
   const [events, setEvents] = useState<WebhookEventType[]>([
@@ -13,7 +14,6 @@ export function WebhookForm() {
   const [created, setCreated] = useState<{ id: string; secret: string } | null>(
     null,
   );
-  const qc = useQueryClient();
   const m = useMutation({
     mutationFn: () =>
       createWebhook({ url, events, description: description || undefined }),
@@ -21,7 +21,7 @@ export function WebhookForm() {
       setCreated({ id: w.id, secret: w.secret });
       setUrl("");
       setDescription("");
-      void qc.invalidateQueries({ queryKey: ["webhooks"] });
+      onCreated();
     },
   });
 

@@ -119,7 +119,7 @@ export default function ObjectsShow({ objectKey: key }: { objectKey: string }) {
           />
         </div>
         <div className="space-y-4">
-          <StatusForm object={object} />
+          <StatusForm object={object} onChange={() => void q.refetch()} />
           <CommentThread
             object={object}
             comments={comments}
@@ -128,6 +128,7 @@ export default function ObjectsShow({ objectKey: key }: { objectKey: string }) {
             onClearDraft={() => setDraft(null)}
             activeId={activeId}
             onActivate={setActiveId}
+            onPosted={() => void q.refetch()}
           />
         </div>
       </div>

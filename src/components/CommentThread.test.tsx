@@ -50,6 +50,7 @@ function renderThread(opts: {
   const comments = opts.comments ?? [];
   const onClearDraft = vi.fn();
   const onActivate = vi.fn();
+  const onPosted = vi.fn();
   render(
     <QueryClientProvider client={new QueryClient()}>
       <CommentThread
@@ -60,10 +61,11 @@ function renderThread(opts: {
         onClearDraft={onClearDraft}
         activeId={opts.activeId ?? null}
         onActivate={onActivate}
+        onPosted={onPosted}
       />
     </QueryClientProvider>,
   );
-  return { onClearDraft, onActivate };
+  return { onClearDraft, onActivate, onPosted };
 }
 
 afterEach(() => {
@@ -72,7 +74,7 @@ afterEach(() => {
 });
 
 describe("CommentThread", () => {
-  test("位置を指定していれば selector を付けて投稿し、投稿後に位置を解除する", async () => {
+  test("位置を指定していれば selector を付けて投稿し、投稿後に位置を解除して親に知らせる", async () => {
     const sent: unknown[] = [];
     vi.stubGlobal("fetch", async (_url: string, init: RequestInit) => {
       sent.push(JSON.parse(String(init.body)));
@@ -90,7 +92,7 @@ describe("CommentThread", () => {
         { status: 201, headers: { "Content-Type": "application/json" } },
       );
     });
-    const { onClearDraft } = renderThread({
+    const { onClearDraft, onPosted } = renderThread({
       draft: { kind: "lines", from: 3, to: 5 },
     });
     expect(screen.getByText("L3–5")).toBeInTheDocument();
@@ -100,6 +102,7 @@ describe("CommentThread", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "投稿" }));
     await waitFor(() => expect(onClearDraft).toHaveBeenCalled());
+    expect(onPosted).toHaveBeenCalled();
     expect(sent).toEqual([
       {
         body: "typo here",

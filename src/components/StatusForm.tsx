@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { updateStatus } from "@/api/status";
 import {
   REVIEW_STATUS_LABELS,
@@ -25,14 +25,17 @@ const ACTIONS: Array<{ status: ReviewStatus; className: string }> = [
   },
 ];
 
-export function StatusForm({ object }: { object: ReviewedObject }) {
-  const qc = useQueryClient();
+export function StatusForm({
+  object,
+  onChange,
+}: {
+  object: ReviewedObject;
+  /** 変更できたら呼ぶ。読み直しは詳細を取得している親が行う */
+  onChange: () => void;
+}) {
   const m = useMutation({
     mutationFn: (status: ReviewStatus) => updateStatus(object.key, status),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["object", object.key] });
-      void qc.invalidateQueries({ queryKey: ["objects"] });
-    },
+    onSuccess: onChange,
   });
 
   return (
@@ -57,24 +60,26 @@ export function StatusForm({ object }: { object: ReviewedObject }) {
         )}
       </div>
       <div className={clsx("flex", "flex-wrap", "gap-2")}>
-        {ACTIONS.filter((a) => a.status !== object.status).map((a) => (
-          <button
-            key={a.status}
-            type="button"
-            disabled={m.isPending}
-            onClick={() => m.mutate(a.status)}
-            className={clsx(
-              "rounded",
-              "px-3",
-              "py-1.5",
-              "text-sm",
-              "disabled:opacity-50",
-              a.className,
-            )}
-          >
-            {REVIEW_STATUS_LABELS[a.status]}
-          </button>
-        ))}
+        {ACTIONS.filter(({ status }) => status !== object.status).map(
+          ({ status, className }) => (
+            <button
+              key={status}
+              type="button"
+              disabled={m.isPending}
+              onClick={() => m.mutate(status)}
+              className={clsx(
+                "rounded",
+                "px-3",
+                "py-1.5",
+                "text-sm",
+                "disabled:opacity-50",
+                className,
+              )}
+            >
+              {REVIEW_STATUS_LABELS[status]}
+            </button>
+          ),
+        )}
       </div>
       {m.isError && (
         <p className={clsx("mt-2", "text-xs", "text-red-600")}>

@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   deleteWebhook,
@@ -13,7 +13,11 @@ import type { WebhookPublic } from "@/domains/Webhook/model";
 import { formatDateTime } from "@/utils/datetime";
 
 export default function WebhooksIndex() {
-  const q = useQuery({ queryKey: ["webhooks"], queryFn: listWebhooks });
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["webhooks"],
+    queryFn: listWebhooks,
+  });
+
   return (
     <>
       <h1 className={clsx("mb-4", "text-xl", "font-semibold")}>Webhook</h1>
@@ -30,54 +34,61 @@ export default function WebhooksIndex() {
         )}
       >
         <div className="space-y-3">
-          {q.isPending && (
+          {isLoading && (
             <p className={clsx("text-sm", "text-gray-500")}>読み込み中…</p>
           )}
-          {q.isError && (
-            <p className={clsx("text-sm", "text-red-700")}>{q.error.message}</p>
+          {isError && (
+            <p className={clsx("text-sm", "text-red-700")}>{error.message}</p>
           )}
-          {q.data?.length === 0 && (
+          {data?.length === 0 ? (
             <p className={clsx("text-sm", "text-gray-500")}>
               まだ登録がありません
             </p>
+          ) : (
+            data?.map((w) => (
+              <WebhookRow
+                key={w.id}
+                webhook={w}
+                onChange={() => void refetch()}
+              />
+            ))
           )}
-          {q.data?.map((w) => (
-            <WebhookRow key={w.id} webhook={w} />
-          ))}
         </div>
-        <WebhookForm />
+        <WebhookForm onCreated={() => void refetch()} />
       </div>
     </>
   );
 }
 
-function WebhookRow({ webhook }: { webhook: WebhookPublic }) {
-  const qc = useQueryClient();
+function WebhookRow({
+  webhook,
+  onChange,
+}: {
+  webhook: WebhookPublic;
+  onChange: () => void;
+}) {
   const [open, setOpen] = useState(false);
-  const invalidate = () =>
-    void qc.invalidateQueries({ queryKey: ["webhooks"] });
+
   const toggle = useMutation({
     mutationFn: () => updateWebhook(webhook.id, { active: !webhook.active }),
-    onSuccess: invalidate,
+    onSuccess: onChange,
   });
+
   const remove = useMutation({
     mutationFn: () => deleteWebhook(webhook.id),
-    onSuccess: invalidate,
+    onSuccess: onChange,
   });
-  const ping = useMutation({
-    mutationFn: () => pingWebhook(webhook.id),
-    onSuccess: () =>
-      setTimeout(
-        () =>
-          void qc.invalidateQueries({ queryKey: ["deliveries", webhook.id] }),
-        3000,
-      ),
-  });
-  const deliveries = useQuery({
+
+  const { data: deliveries, refetch } = useQuery({
     queryKey: ["deliveries", webhook.id],
     queryFn: () => listDeliveries(webhook.id),
     enabled: open,
     refetchInterval: open ? 5000 : false,
+  });
+
+  const ping = useMutation({
+    mutationFn: () => pingWebhook(webhook.id),
+    onSuccess: () => setTimeout(() => void refetch(), 3000),
   });
 
   return (
@@ -205,40 +216,44 @@ function WebhookRow({ webhook }: { webhook: WebhookPublic }) {
             </tr>
           </thead>
           <tbody>
-            {deliveries.data?.length === 0 && (
+            {deliveries?.length === 0 ? (
               <tr>
                 <td colSpan={5} className={clsx("py-2", "text-gray-500")}>
                   配送はまだありません
                 </td>
               </tr>
+            ) : (
+              deliveries?.map((d) => (
+                <tr key={d.id} className={clsx("border-t", "border-gray-100")}>
+                  <td className="py-1">
+                    <code>{d.eventType}</code>
+                  </td>
+                  <td className="py-1">{d.attempts}</td>
+                  <td className="py-1">
+                    {d.deliveredAt ? (
+                      <span className="text-green-700">
+                        配送済 ({d.lastStatus})
+                      </span>
+                    ) : d.deadAt ? (
+                      <span className="text-red-700" title={d.lastError ?? ""}>
+                        断念 ({d.lastError})
+                      </span>
+                    ) : (
+                      <span
+                        className="text-amber-700"
+                        title={d.lastError ?? ""}
+                      >
+                        {d.attempts === 0
+                          ? "待機中"
+                          : `再送待ち (${d.lastError})`}
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-1">{formatDateTime(d.nextAttemptAt)}</td>
+                  <td className="py-1">{formatDateTime(d.createdAt)}</td>
+                </tr>
+              ))
             )}
-            {deliveries.data?.map((d) => (
-              <tr key={d.id} className={clsx("border-t", "border-gray-100")}>
-                <td className="py-1">
-                  <code>{d.eventType}</code>
-                </td>
-                <td className="py-1">{d.attempts}</td>
-                <td className="py-1">
-                  {d.deliveredAt ? (
-                    <span className="text-green-700">
-                      配送済 ({d.lastStatus})
-                    </span>
-                  ) : d.deadAt ? (
-                    <span className="text-red-700" title={d.lastError ?? ""}>
-                      断念 ({d.lastError})
-                    </span>
-                  ) : (
-                    <span className="text-amber-700" title={d.lastError ?? ""}>
-                      {d.attempts === 0
-                        ? "待機中"
-                        : `再送待ち (${d.lastError})`}
-                    </span>
-                  )}
-                </td>
-                <td className="py-1">{formatDateTime(d.nextAttemptAt)}</td>
-                <td className="py-1">{formatDateTime(d.createdAt)}</td>
-              </tr>
-            ))}
           </tbody>
         </table>
       )}
