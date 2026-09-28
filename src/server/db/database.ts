@@ -1,4 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
+import { now, nowMillis, toIsoMillis, toIsoSeconds } from "@/utils/datetime";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import schema20260927 from "./schema/20260927.sql";
@@ -90,7 +91,7 @@ export class Db {
         this.exec(sql);
         this.prepare(
           "INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)",
-        ).run(version, new Date().toISOString());
+        ).run(version, toIsoMillis(nowMillis()));
         this.exec("COMMIT");
       } catch (e) {
         this.exec("ROLLBACK");
@@ -100,8 +101,9 @@ export class Db {
   }
 }
 
+/** 今の時刻を保存用の文字列（秒精度 `…Z`）で。indexed_at など「今回の索引より古い行」の比較に使う */
 export function nowIso(): string {
-  return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+  return toIsoSeconds(now());
 }
 
 /** LIKE のワイルドカードをエスケープ（ESCAPE '\' と組で使う） */

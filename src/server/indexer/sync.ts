@@ -1,4 +1,4 @@
-import { toIso } from "@/domains/Annotation/model";
+import { toIsoSeconds } from "@/utils/datetime";
 import type { Comment } from "@/domains/Annotation/model";
 import type { ReviewedObject } from "@/domains/ReviewedObject/model";
 import { nowIso } from "../db/database";
@@ -30,9 +30,9 @@ export async function syncObject(
     etag: head.etag,
     size: head.size,
     content_type: head.contentType,
-    last_modified: head.lastModified ? toIso(head.lastModified) : null,
+    last_modified: head.lastModified ? toIsoSeconds(head.lastModified) : null,
     status: status.status,
-    status_updated_at: status.updatedAt,
+    status_updated_at: status.updatedAt ? toIsoSeconds(status.updatedAt) : null,
     reviewer: status.reviewer,
     indexed_at: nowIso(),
   };

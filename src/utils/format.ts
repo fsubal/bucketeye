@@ -10,9 +10,3 @@ export function formatBytes(bytes: number | null | undefined): string {
   }
   return `${value.toFixed(value < 10 ? 1 : 0)} ${units[i]}`;
 }
-
-export function formatDate(iso: string | null | undefined): string {
-  if (!iso) return "-";
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
-}

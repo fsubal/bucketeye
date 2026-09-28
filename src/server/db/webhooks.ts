@@ -1,4 +1,5 @@
 import type { Db } from "./database";
+import { toIsoSeconds } from "@/utils/datetime";
 import { Webhook, type WebhookEventType } from "@/domains/Webhook/model";
 
 type WebhookRow = {
@@ -40,7 +41,7 @@ export function upsertWebhook(db: Db, w: Webhook, indexedAt: string): void {
     w.active ? 1 : 0,
     w.description,
     w.createdBy,
-    w.createdAt,
+    toIsoSeconds(w.createdAt),
     indexedAt,
   );
 }

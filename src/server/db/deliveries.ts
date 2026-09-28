@@ -1,5 +1,11 @@
 import type { Db } from "./database";
 import {
+  nowMillis,
+  parseInstant,
+  Temporal,
+  toIsoMillis,
+} from "@/utils/datetime";
+import {
   MAX_ATTEMPTS,
   RETRY_SCHEDULE_SECONDS,
   type Delivery,
@@ -27,12 +33,12 @@ export function toDelivery(row: DeliveryRow): Delivery {
     webhookId: row.webhook_id,
     eventType: row.event_type,
     attempts: row.attempts,
-    nextAttemptAt: row.next_attempt_at,
+    nextAttemptAt: parseInstant(row.next_attempt_at),
     lastStatus: row.last_status,
     lastError: row.last_error,
-    deliveredAt: row.delivered_at,
-    deadAt: row.dead_at,
-    createdAt: row.created_at,
+    deliveredAt: parseInstant(row.delivered_at),
+    deadAt: parseInstant(row.dead_at),
+    createdAt: Temporal.Instant.from(row.created_at),
   };
 }
 
@@ -42,7 +48,7 @@ export function enqueueDelivery(
   webhookId: string,
   event: WebhookEvent,
 ): void {
-  const now = new Date().toISOString();
+  const now = toIsoMillis(nowMillis());
   db.prepare(
     `INSERT INTO webhook_deliveries (id, webhook_id, event_type, payload, attempts, next_attempt_at, created_at)
      VALUES (?, ?, ?, ?, 0, ?, ?)`,
@@ -53,7 +59,7 @@ export function enqueueDelivery(
 export function dueDeliveries(
   db: Db,
   limit: number,
-  now: string = new Date().toISOString(),
+  at: Temporal.Instant = nowMillis(),
 ): DeliveryRow[] {
   return db
     .prepare(
@@ -61,13 +67,13 @@ export function dueDeliveries(
        WHERE delivered_at IS NULL AND dead_at IS NULL AND next_attempt_at <= ?
        ORDER BY next_attempt_at LIMIT ?`,
     )
-    .all(now, limit) as DeliveryRow[];
+    .all(toIsoMillis(at), limit) as DeliveryRow[];
 }
 
 export function markDelivered(db: Db, id: string, status: number): void {
   db.prepare(
     "UPDATE webhook_deliveries SET attempts = attempts + 1, last_status = ?, last_error = NULL, delivered_at = ?, next_attempt_at = NULL WHERE id = ?",
-  ).run(status, new Date().toISOString(), id);
+  ).run(status, toIsoMillis(nowMillis()), id);
 }
 
 /** 失敗: 次回時刻をバックオフ表から決める。回数を使い切ったら dead */
@@ -76,19 +82,19 @@ export function markFailed(
   row: DeliveryRow,
   status: number | null,
   error: string | null,
-  now: Date = new Date(),
+  now: Temporal.Instant = nowMillis(),
 ): void {
   const attempts = row.attempts + 1;
   if (attempts >= MAX_ATTEMPTS) {
     db.prepare(
       "UPDATE webhook_deliveries SET attempts = ?, last_status = ?, last_error = ?, dead_at = ?, next_attempt_at = NULL WHERE id = ?",
-    ).run(attempts, status, error, now.toISOString(), row.id);
+    ).run(attempts, status, error, toIsoMillis(now), row.id);
     return;
   }
   const delay =
     RETRY_SCHEDULE_SECONDS[attempts - 1] ??
     RETRY_SCHEDULE_SECONDS[RETRY_SCHEDULE_SECONDS.length - 1]!;
-  const next = new Date(now.getTime() + delay * 1000).toISOString();
+  const next = toIsoMillis(now.add({ seconds: delay }));
   db.prepare(
     "UPDATE webhook_deliveries SET attempts = ?, last_status = ?, last_error = ?, next_attempt_at = ? WHERE id = ?",
   ).run(attempts, status, error, next, row.id);

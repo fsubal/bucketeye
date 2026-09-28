@@ -4,6 +4,7 @@ import { syncObject } from "./sync";
 import { createTestDeps, identity } from "../../../test/helpers";
 import { findObject } from "../db/objects";
 import { listComments } from "../db/comments";
+import { Temporal } from "@/utils/datetime";
 
 describe("runIndex", () => {
   test("TARGET_PREFIX 以下を索引し、サイドカーと対象外を除き、消えたものを削除する。冪等", async () => {
@@ -38,7 +39,7 @@ describe("runIndex", () => {
       active: true,
       description: "",
       createdBy: "a",
-      createdAt: "2026-01-01T00:00:00Z",
+      createdAt: Temporal.Instant.from("2026-01-01T00:00:00Z"),
     });
     t.db
       .prepare(

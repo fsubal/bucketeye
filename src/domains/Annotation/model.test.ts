@@ -7,6 +7,7 @@ import {
   parseSource,
   ulidOf,
 } from "./model";
+import { Temporal } from "@/utils/datetime";
 
 describe("Annotation", () => {
   test("W3C Web Annotation の形で組み立て、スキーマを通る", () => {
@@ -53,10 +54,10 @@ describe("Annotation", () => {
   });
 
   test("ULID は 26 文字で、同一ミリ秒内でも単調増加", () => {
-    const t = new Date(1_700_000_000_000);
+    const t = Temporal.Instant.fromEpochMilliseconds(1_700_000_000_000);
     const a = generateUlid(t);
     const b = generateUlid(t);
-    const c = generateUlid(new Date(t.getTime() + 1));
+    const c = generateUlid(t.add({ milliseconds: 1 }));
     expect(a).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
     expect(a < b).toBe(true);
     expect(b < c).toBe(true);

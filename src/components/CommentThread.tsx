@@ -3,7 +3,7 @@ import { useState } from "react";
 import { createComment } from "@/api/comments";
 import type { Comment } from "@/domains/Annotation/model";
 import type { ReviewedObject } from "@/domains/ReviewedObject/model";
-import { formatDate } from "@/utils/format";
+import { formatDateTime, toIsoSeconds } from "@/utils/datetime";
 
 export function CommentThread({
   object,
@@ -37,7 +37,9 @@ export function CommentThread({
               <span className="font-medium text-gray-700">
                 {c.authorName ?? c.authorEmail}
               </span>
-              <time dateTime={c.createdAt}>{formatDate(c.createdAt)}</time>
+              <time dateTime={toIsoSeconds(c.createdAt)}>
+                {formatDateTime(c.createdAt)}
+              </time>
             </div>
             <p className="whitespace-pre-wrap">{c.body}</p>
           </li>

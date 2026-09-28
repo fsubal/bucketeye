@@ -2,6 +2,7 @@ import { Hono, type Context } from "hono";
 import { z } from "zod";
 import { Selector } from "@/domains/Annotation/model";
 import { normalizePrefix, ReviewStatus } from "@/domains/ReviewedObject/model";
+import { Instant, toIsoSeconds } from "@/utils/datetime";
 import type { AppEnv } from "../app";
 import {
   countByStatus,
@@ -28,9 +29,8 @@ const ListQuery = z.object({
   status: ReviewStatus.optional(),
   page: z.coerce.number().int().min(1).default(1),
   per: z.coerce.number().int().min(1).max(MAX_PER).default(DEFAULT_PER),
-  updatedSince: z.iso
-    .datetime({ offset: true, message: "must be an ISO 8601 date-time" })
-    .optional(),
+  // ISO 8601（タイムゾーン必須）を Temporal.Instant に
+  updatedSince: Instant.optional(),
 });
 
 const CommentInput = z.object({
@@ -185,7 +185,7 @@ export function statusesRoutes() {
     );
     updateObjectStatus(deps.db, deps.s3.bucket, key, {
       status: written.status,
-      updatedAt: written.updatedAt,
+      updatedAt: written.updatedAt ? toIsoSeconds(written.updatedAt) : null,
       reviewer: written.reviewer,
     });
     const object = {

@@ -9,7 +9,7 @@ import {
 } from "@/api/webhooks";
 import { WebhookForm } from "@/components/WebhookForm";
 import type { WebhookPublic } from "@/domains/Webhook/model";
-import { formatDate } from "@/utils/format";
+import { formatDateTime } from "@/utils/datetime";
 
 export default function WebhooksIndex() {
   const q = useQuery({ queryKey: ["webhooks"], queryFn: listWebhooks });
@@ -83,7 +83,7 @@ function WebhookRow({ webhook }: { webhook: WebhookPublic }) {
               </code>
             ))}
             · secret {webhook.secretHint} · {webhook.createdBy} ·{" "}
-            {formatDate(webhook.createdAt)}
+            {formatDateTime(webhook.createdAt)}
             {!webhook.active && (
               <span className="ml-2 rounded bg-gray-200 px-1.5 text-gray-700">
                 無効
@@ -170,8 +170,8 @@ function WebhookRow({ webhook }: { webhook: WebhookPublic }) {
                     </span>
                   )}
                 </td>
-                <td className="py-1">{formatDate(d.nextAttemptAt)}</td>
-                <td className="py-1">{formatDate(d.createdAt)}</td>
+                <td className="py-1">{formatDateTime(d.nextAttemptAt)}</td>
+                <td className="py-1">{formatDateTime(d.createdAt)}</td>
               </tr>
             ))}
           </tbody>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Instant } from "@/utils/datetime";
 
 /** 承認ステータス。S3 のオブジェクトタグ `review-status` に書かれる値そのもの */
 export const REVIEW_STATUSES = [
@@ -62,11 +63,11 @@ export const ReviewedObject = z.object({
   size: z.number().int().nullable(),
   contentType: z.string().nullable(),
   kind: ObjectKind,
-  lastModified: z.string().nullable(),
+  lastModified: Instant.nullable(),
   status: ReviewStatus,
-  statusUpdatedAt: z.string().nullable(),
+  statusUpdatedAt: Instant.nullable(),
   reviewer: z.string().nullable(),
-  indexedAt: z.string().nullable(),
+  indexedAt: Instant.nullable(),
 });
 export type ReviewedObject = z.infer<typeof ReviewedObject>;
 

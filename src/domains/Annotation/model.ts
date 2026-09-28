@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Instant, now, Temporal, toIsoSeconds } from "@/utils/datetime";
 import { monotonicFactory } from "ulid";
 import { Identity } from "@/domains/Identity/model";
 
@@ -73,7 +74,7 @@ export function buildAnnotation(input: {
   creator: Pick<z.infer<typeof Identity>, "email" | "name">;
   selector?: Selector;
   ulid?: string;
-  created?: Date;
+  created?: Temporal.Instant;
 }): Annotation {
   const target: Annotation["target"] = {
     source: sourceFor(input.bucket, input.key),
@@ -84,7 +85,8 @@ export function buildAnnotation(input: {
     id: `urn:ulid:${input.ulid ?? generateUlid()}`,
     type: "Annotation",
     motivation: "commenting",
-    created: toIso(input.created ?? new Date()),
+    // W3C Web Annotation の created は xsd:dateTime の文字列（S3 にもこの形で置く）
+    created: toIsoSeconds(input.created ?? now()),
     creator: {
       type: "Person",
       email: input.creator.email,
@@ -95,11 +97,6 @@ export function buildAnnotation(input: {
   };
 }
 
-/** 秒精度の ISO8601（Rails 版と同じ表記） */
-export function toIso(date: Date): string {
-  return date.toISOString().replace(/\.\d{3}Z$/, "Z");
-}
-
 /** API / UI 向けの平たい形 */
 export const Comment = z.object({
   id: z.string(),
@@ -107,7 +104,7 @@ export const Comment = z.object({
   authorName: z.string().nullable(),
   body: z.string(),
   selector: Selector.nullable(),
-  createdAt: z.string(),
+  createdAt: Instant,
 });
 export type Comment = z.infer<typeof Comment>;
 
@@ -118,13 +115,15 @@ export function commentOf(annotation: Annotation): Comment {
     authorName: annotation.creator.name ?? null,
     body: annotation.body.value,
     selector: annotation.target.selector ?? null,
-    createdAt: annotation.created,
+    createdAt: Temporal.Instant.from(annotation.created),
   };
 }
 
 // ---- ULID（時刻順にソートできる 26 文字の ID）。同一ミリ秒内でも単調増加になる monotonic 版を使う ----
 const monotonicUlid = monotonicFactory();
 
-export function generateUlid(now: Date = new Date()): string {
-  return monotonicUlid(now.getTime());
+export function generateUlid(
+  at: Temporal.Instant = Temporal.Now.instant(),
+): string {
+  return monotonicUlid(at.epochMilliseconds);
 }

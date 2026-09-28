@@ -11,7 +11,8 @@ import {
   REVIEW_STATUSES,
   ReviewStatus,
 } from "@/domains/ReviewedObject/model";
-import { formatBytes, formatDate } from "@/utils/format";
+import { formatBytes } from "@/utils/format";
+import { formatDateTime } from "@/utils/datetime";
 
 /**
  * 一覧の検索パラメータ（?prefix=&status=&page=）。URL を状態の正にする。
@@ -98,7 +99,7 @@ export default function ObjectsIndex({
           {data.lastIndexRun && (
             <span title={data.lastIndexRun.error ?? undefined}>
               最終索引:{" "}
-              {formatDate(
+              {formatDateTime(
                 data.lastIndexRun.finishedAt ?? data.lastIndexRun.startedAt,
               )}
               {data.lastIndexRun.error && (
@@ -196,7 +197,7 @@ export default function ObjectsIndex({
                 {formatBytes(o.size)}
               </td>
               <td className="px-3 py-2 text-gray-600">
-                {formatDate(o.lastModified)}
+                {formatDateTime(o.lastModified)}
               </td>
             </tr>
           ))}

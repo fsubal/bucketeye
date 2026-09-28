@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Instant } from "@/utils/datetime";
 import { Annotation } from "@/domains/Annotation/model";
 import { ReviewedObject, ReviewStatus } from "@/domains/ReviewedObject/model";
 
@@ -18,7 +19,7 @@ export const Webhook = z.object({
   active: z.boolean(),
   description: z.string().default(""),
   createdBy: z.string(),
-  createdAt: z.string(),
+  createdAt: Instant,
 });
 export type Webhook = z.infer<typeof Webhook>;
 
@@ -48,7 +49,7 @@ export const WebhookEvent = z.discriminatedUnion("type", [
   z.object({
     id: z.string(),
     type: z.literal("object.status_changed"),
-    createdAt: z.string(),
+    createdAt: Instant,
     url: z.string().nullable(),
     data: z.object({
       bucket: z.string(),
@@ -62,7 +63,7 @@ export const WebhookEvent = z.discriminatedUnion("type", [
   z.object({
     id: z.string(),
     type: z.literal("comment.created"),
-    createdAt: z.string(),
+    createdAt: Instant,
     url: z.string().nullable(),
     data: z.object({
       bucket: z.string(),
@@ -74,7 +75,7 @@ export const WebhookEvent = z.discriminatedUnion("type", [
   z.object({
     id: z.string(),
     type: z.literal("ping"),
-    createdAt: z.string(),
+    createdAt: Instant,
     url: z.string().nullable(),
     data: z.object({ webhookId: z.string(), message: z.string() }),
   }),
@@ -96,11 +97,11 @@ export const Delivery = z.object({
   webhookId: z.string(),
   eventType: z.string(),
   attempts: z.number().int(),
-  nextAttemptAt: z.string().nullable(),
+  nextAttemptAt: Instant.nullable(),
   lastStatus: z.number().int().nullable(),
   lastError: z.string().nullable(),
-  deliveredAt: z.string().nullable(),
-  deadAt: z.string().nullable(),
-  createdAt: z.string(),
+  deliveredAt: Instant.nullable(),
+  deadAt: Instant.nullable(),
+  createdAt: Instant,
 });
 export type Delivery = z.infer<typeof Delivery>;

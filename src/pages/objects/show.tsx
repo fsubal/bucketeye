@@ -5,7 +5,8 @@ import { CommentThread } from "@/components/CommentThread";
 import { Preview } from "@/components/Preview";
 import { StatusForm } from "@/components/StatusForm";
 import { parentPrefixOf } from "@/domains/ReviewedObject/model";
-import { formatBytes, formatDate } from "@/utils/format";
+import { formatBytes } from "@/utils/format";
+import { formatDateTime } from "@/utils/datetime";
 
 /** objectKey はルーターが /objects/$ の残り（_splat）から渡す。デコード済み */
 export default function ObjectsShow({ objectKey: key }: { objectKey: string }) {
@@ -40,7 +41,7 @@ export default function ObjectsShow({ objectKey: key }: { objectKey: string }) {
           <h1 className="text-xl font-semibold break-all">{object.name}</h1>
           <p className="mt-1 text-xs text-gray-500">
             {object.contentType ?? "不明"} · {formatBytes(object.size)} · 更新{" "}
-            {formatDate(object.lastModified)} · ETag {object.etag}
+            {formatDateTime(object.lastModified)} · ETag {object.etag}
           </p>
         </div>
         <a

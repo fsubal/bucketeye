@@ -1,4 +1,4 @@
-import { toIso } from "@/domains/Annotation/model";
+import { toIsoSeconds } from "@/utils/datetime";
 import { parseSource, ulidOf } from "@/domains/Annotation/model";
 import type { Config } from "../config";
 import { type Db, nowIso } from "../db/database";
@@ -61,7 +61,9 @@ export async function runIndex(deps: IndexerDeps): Promise<IndexResult> {
         etag: head.etag,
         size: head.size,
         content_type: head.contentType,
-        last_modified: head.lastModified ? toIso(head.lastModified) : null,
+        last_modified: head.lastModified
+          ? toIsoSeconds(head.lastModified)
+          : null,
         status: "pending",
         status_updated_at: null,
         reviewer: null,
@@ -72,7 +74,9 @@ export async function runIndex(deps: IndexerDeps): Promise<IndexResult> {
     upsertObject(db, {
       ...row,
       status: status.status,
-      status_updated_at: status.updatedAt,
+      status_updated_at: status.updatedAt
+        ? toIsoSeconds(status.updatedAt)
+        : null,
       reviewer: status.reviewer,
       indexed_at: startedAt,
     });

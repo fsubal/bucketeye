@@ -1,4 +1,5 @@
 import { createRemoteJWKSet, importSPKI, type CryptoKey } from "jose";
+import { Temporal } from "@/utils/datetime";
 import type { KeyResolver } from "./provider";
 
 /** JWKS（IAP / Cloudflare Access）。jose がキャッシュとローテーション時の再取得を面倒見る */
@@ -15,7 +16,10 @@ export function albKeyResolver(
   expectedSigner?: string,
   fetchImpl: typeof fetch = fetch,
 ): KeyResolver {
-  const cache = new Map<string, { key: CryptoKey; expires: number }>();
+  const cache = new Map<
+    string,
+    { key: CryptoKey; expires: Temporal.Instant }
+  >();
   return async (header) => {
     const kid = String(header.kid ?? "");
     if (!/^[0-9a-f-]{20,64}$/.test(kid))
@@ -24,14 +28,18 @@ export function albKeyResolver(
     if (expectedSigner && signer !== expectedSigner)
       throw new Error(`unexpected signer: ${String(signer)}`);
     const hit = cache.get(kid);
-    if (hit && hit.expires > Date.now()) return hit.key;
+    if (
+      hit &&
+      Temporal.Instant.compare(hit.expires, Temporal.Now.instant()) > 0
+    )
+      return hit.key;
     const res = await fetchImpl(
       `https://public-keys.auth.elb.${region}.amazonaws.com/${kid}`,
     );
     if (!res.ok)
       throw new Error(`failed to fetch ALB public key: HTTP ${res.status}`);
     const key = await importSPKI(await res.text(), "ES256");
-    cache.set(kid, { key, expires: Date.now() + 60 * 60 * 1000 });
+    cache.set(kid, { key, expires: Temporal.Now.instant().add({ hours: 1 }) });
     return key;
   };
 }

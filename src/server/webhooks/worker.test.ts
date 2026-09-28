@@ -3,6 +3,7 @@ import { MAX_ATTEMPTS } from "@/domains/Webhook/model";
 import { createTestDeps, json, signIn } from "../../../test/helpers";
 import { WebhookWorker } from "./worker";
 import { verify } from "./signature";
+import { Temporal } from "@/utils/datetime";
 
 async function registerWebhook(
   t: ReturnType<typeof createTestDeps>,
@@ -94,7 +95,7 @@ describe("WebhookWorker", () => {
       fetchImpl: async () => new Response("nope", { status }),
     });
 
-    let now = new Date(Date.now() + 1000);
+    let now = Temporal.Now.instant().add({ seconds: 1 });
     expect(await worker.tick(now)).toBe(1);
     let row = t.db
       .prepare(
@@ -106,12 +107,12 @@ describe("WebhookWorker", () => {
       last_status: number;
     };
     expect(row).toMatchObject({ attempts: 1, last_status: 500 });
-    expect(new Date(row.next_attempt_at).getTime()).toBe(
-      now.getTime() + 60_000,
+    expect(Temporal.Instant.from(row.next_attempt_at).epochMilliseconds).toBe(
+      now.epochMilliseconds + 60_000,
     );
 
     // まだ期限前なら配送しない
-    expect(await worker.tick(new Date(now.getTime() + 30_000))).toBe(0);
+    expect(await worker.tick(now.add({ seconds: 30 }))).toBe(0);
 
     // 期限を進めながら失敗を重ねると dead になる
     for (let i = 1; i < MAX_ATTEMPTS; i++) {
@@ -120,7 +121,7 @@ describe("WebhookWorker", () => {
           "SELECT attempts, next_attempt_at, last_status FROM webhook_deliveries",
         )
         .get() as typeof row;
-      now = new Date(row.next_attempt_at);
+      now = Temporal.Instant.from(row.next_attempt_at);
       expect(await worker.tick(now)).toBe(1);
     }
     const final = t.db
@@ -133,12 +134,16 @@ describe("WebhookWorker", () => {
     expect(final.attempts).toBe(MAX_ATTEMPTS);
     expect(final.dead_at).not.toBeNull();
     expect(final.delivered_at).toBeNull();
-    expect(await worker.tick(new Date("2030-01-01T00:00:00Z"))).toBe(0);
+    expect(
+      await worker.tick(Temporal.Instant.from("2030-01-01T00:00:00Z")),
+    ).toBe(0);
 
     // 途中で成功すれば delivered（別の配送で確認）
     status = 200;
     t.dispatcher.ping(webhook.id);
-    expect(await worker.tick(new Date("2030-01-01T00:00:00Z"))).toBe(1);
+    expect(
+      await worker.tick(Temporal.Instant.from("2030-01-01T00:00:00Z")),
+    ).toBe(1);
     expect(
       t.db
         .prepare(

@@ -1,5 +1,12 @@
 import { z } from "zod";
-import { sourceFor, toIso } from "@/domains/Annotation/model";
+import { sourceFor } from "@/domains/Annotation/model";
+import {
+  Instant,
+  now,
+  type Temporal,
+  toIsoSeconds,
+  tryParseInstant,
+} from "@/utils/datetime";
 import {
   DEFAULT_STATUS,
   REVIEW_STATUSES,
@@ -11,7 +18,7 @@ import { statusSidecarKey } from "./keys";
 
 export type StatusRecord = {
   status: ReviewStatus;
-  updatedAt: string | null;
+  updatedAt: Temporal.Instant | null;
   reviewer: string | null;
 };
 
@@ -28,7 +35,7 @@ export interface StatusStore {
     key: string,
     status: ReviewStatus,
     reviewer: string,
-    now?: Date,
+    at?: Temporal.Instant,
   ): Promise<StatusRecord>;
 }
 
@@ -46,7 +53,7 @@ export class TagStatusStore implements StatusStore {
     if (!(STATUS_TAGS.status in tags)) return PENDING;
     return {
       status: coerceStatus(tags[STATUS_TAGS.status]),
-      updatedAt: tags[STATUS_TAGS.updatedAt] || null,
+      updatedAt: tryParseInstant(tags[STATUS_TAGS.updatedAt]),
       reviewer: tags[STATUS_TAGS.reviewer] || null,
     };
   }
@@ -55,12 +62,12 @@ export class TagStatusStore implements StatusStore {
     key: string,
     status: ReviewStatus,
     reviewer: string,
-    now = new Date(),
+    at = now(),
   ): Promise<StatusRecord> {
-    const updatedAt = toIso(now);
+    const updatedAt = at;
     await this.s3.mergeTags(key, {
       [STATUS_TAGS.status]: status,
-      [STATUS_TAGS.updatedAt]: updatedAt,
+      [STATUS_TAGS.updatedAt]: toIsoSeconds(updatedAt),
       // タグ値に使える文字は英数字と空白 + - = . _ : / @ のみ（S3 の制約）
       [STATUS_TAGS.reviewer]: reviewer
         .replace(/[^A-Za-z0-9 +\-=._:/@]/g, "_")
@@ -76,7 +83,7 @@ export class TagStatusStore implements StatusStore {
 export const StatusSidecar = z.object({
   source: z.string().optional(),
   status: ReviewStatus.catch(DEFAULT_STATUS),
-  updatedAt: z.string().nullable().catch(null),
+  updatedAt: Instant.nullable().catch(null),
   reviewer: z.string().nullable().catch(null),
 });
 export type StatusSidecar = z.infer<typeof StatusSidecar>;
@@ -103,9 +110,9 @@ export class SidecarStatusStore implements StatusStore {
     key: string,
     status: ReviewStatus,
     reviewer: string,
-    now = new Date(),
+    at = now(),
   ): Promise<StatusRecord> {
-    const updatedAt = toIso(now);
+    const updatedAt = at;
     const sidecar: StatusSidecar = {
       source: sourceFor(this.s3.bucket, key),
       status,

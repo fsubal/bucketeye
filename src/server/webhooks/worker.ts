@@ -1,3 +1,4 @@
+import { nowMillis, type Temporal } from "@/utils/datetime";
 import {
   DELIVERY_HEADER,
   EVENT_HEADER,
@@ -46,15 +47,11 @@ export class WebhookWorker {
   }
 
   /** 期限の来た配送をまとめて処理する。テストからも直接呼ぶ */
-  async tick(now: Date = new Date()): Promise<number> {
+  async tick(now: Temporal.Instant = nowMillis()): Promise<number> {
     if (this.ticking) return 0;
     this.ticking = true;
     try {
-      const rows = dueDeliveries(
-        this.db,
-        this.opts.concurrency ?? 4,
-        now.toISOString(),
-      );
+      const rows = dueDeliveries(this.db, this.opts.concurrency ?? 4, now);
       await Promise.all(rows.map((row) => this.deliver(row, now)));
       return rows.length;
     } finally {
@@ -62,7 +59,10 @@ export class WebhookWorker {
     }
   }
 
-  private async deliver(row: DeliveryRow, now: Date): Promise<void> {
+  private async deliver(
+    row: DeliveryRow,
+    now: Temporal.Instant,
+  ): Promise<void> {
     const webhook = findWebhook(this.db, row.webhook_id);
     if (!webhook) {
       markFailed(

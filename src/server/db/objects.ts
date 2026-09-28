@@ -1,4 +1,5 @@
 import type { SQLInputValue } from "node:sqlite";
+import { parseInstant, type Temporal, toIsoMillis } from "@/utils/datetime";
 import type { Db } from "./database";
 import { escapeLike } from "./database";
 import {
@@ -30,11 +31,11 @@ export function toReviewedObject(row: ObjectRow): ReviewedObject {
     size: row.size,
     contentType: row.content_type,
     kind: kindOf(row.content_type),
-    lastModified: row.last_modified,
+    lastModified: parseInstant(row.last_modified),
     status: row.status,
-    statusUpdatedAt: row.status_updated_at,
+    statusUpdatedAt: parseInstant(row.status_updated_at),
     reviewer: row.reviewer,
-    indexedAt: row.indexed_at,
+    indexedAt: parseInstant(row.indexed_at),
   };
 }
 
@@ -130,7 +131,7 @@ export type ListOptions = {
   /** 指定時はフォルダを無視して prefix 以下を平らに並べる */
   status?: ReviewStatus | null;
   /** ISO 8601。承認ステータスがこの時刻以降に更新されたものだけ（一度もレビューされていないものは含まない）。指定時は平らに並べる */
-  updatedSince?: string | null;
+  updatedSince?: Temporal.Instant | null;
   limit: number;
   offset: number;
 };
@@ -146,7 +147,7 @@ function listWhere(o: ListOptions): { where: string; params: SQLInputValue[] } {
     // 保存形式（秒精度の ...Z）と指定値（ミリ秒やタイムゾーン付き）の文字列比較は順序が狂うので時刻として比べる
     where +=
       " AND status_updated_at IS NOT NULL AND julianday(status_updated_at) >= julianday(?)";
-    params.push(new Date(o.updatedSince).toISOString());
+    params.push(toIsoMillis(o.updatedSince));
   }
   if (!o.status && !o.updatedSince) {
     where += ` AND substr(key, ?) NOT LIKE '%/%'`;

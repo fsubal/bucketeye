@@ -78,7 +78,7 @@ export function adminRoutes() {
         etag: head.etag,
         size: head.size,
         contentType: head.contentType,
-        lastModified: head.lastModified?.toISOString() ?? null,
+        lastModified: head.lastModified,
       },
       statusStrategy: config.s3.statusStrategy,
       tags,

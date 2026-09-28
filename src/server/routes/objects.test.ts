@@ -6,6 +6,7 @@ import {
   signIn,
   type TestDeps,
 } from "../../../test/helpers";
+import { Temporal } from "@/utils/datetime";
 
 let t: TestDeps;
 let auth: Record<string, string>;
@@ -265,11 +266,13 @@ describe("ステータス", () => {
     expect(written["updatedAt"]).toMatch(
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/,
     );
-    expect(await s.statusStore.read("submissions/a.png")).toMatchObject({
+    const read = await s.statusStore.read("submissions/a.png");
+    expect(read).toMatchObject({
       status: "rejected",
       reviewer: "reviewer@example.com",
-      updatedAt: written["updatedAt"],
     });
+    // Temporal.Instant は列挙できるプロパティを持たず toEqual では常に一致してしまうので、文字列にして比べる
+    expect(read?.updatedAt?.toString()).toBe(written["updatedAt"]);
 
     // 壊れた値は索引を止めずに pending / null として読む
     await s.s3.putJson(sidecar, { status: "bogus", updatedAt: 123 });
@@ -470,7 +473,7 @@ describe("updatedSince", () => {
       key,
       "approved",
       "alice@example.com",
-      new Date(iso),
+      Temporal.Instant.from(iso),
     );
   }
 
@@ -540,7 +543,7 @@ describe("updatedSince", () => {
       "submissions/2026/body.pdf",
       "rejected",
       "alice@example.com",
-      new Date("2026-06-02T00:00:00Z"),
+      Temporal.Instant.from("2026-06-02T00:00:00Z"),
     );
     await runIndex(t);
     const body = (await (

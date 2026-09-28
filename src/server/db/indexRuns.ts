@@ -1,5 +1,6 @@
 import type { Db } from "./database";
 import { nowIso } from "./database";
+import { parseInstant, Temporal } from "@/utils/datetime";
 
 type IndexRunRow = {
   id: number;
@@ -14,8 +15,8 @@ type IndexRunRow = {
 
 export type IndexRun = {
   id: number;
-  startedAt: string;
-  finishedAt: string | null;
+  startedAt: Temporal.Instant;
+  finishedAt: Temporal.Instant | null;
   objects: number | null;
   comments: number | null;
   webhooks: number | null;
@@ -26,8 +27,8 @@ export type IndexRun = {
 function toIndexRun(row: IndexRunRow): IndexRun {
   return {
     id: row.id,
-    startedAt: row.started_at,
-    finishedAt: row.finished_at,
+    startedAt: Temporal.Instant.from(row.started_at),
+    finishedAt: parseInstant(row.finished_at),
     objects: row.objects,
     comments: row.comments,
     webhooks: row.webhooks,

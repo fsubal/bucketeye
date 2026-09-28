@@ -1,10 +1,11 @@
+import { now, type Temporal } from "@/utils/datetime";
 import { createHash } from "node:crypto";
 import type { HeadResult, Listing, ListedObject, S3Port } from "./port";
 
 type Stored = {
   body: Uint8Array;
   contentType: string;
-  lastModified: Date;
+  lastModified: Temporal.Instant;
   tags: Record<string, string>;
 };
 
@@ -24,14 +25,18 @@ export class MemoryS3 implements S3Port {
   put(
     key: string,
     body: string | Uint8Array,
-    opts: { bucket?: string; contentType?: string; lastModified?: Date } = {},
+    opts: {
+      bucket?: string;
+      contentType?: string;
+      lastModified?: Temporal.Instant;
+    } = {},
   ): void {
     const bytes =
       typeof body === "string" ? new TextEncoder().encode(body) : body;
     this.store.set(this.k(opts.bucket ?? this.bucket, key), {
       body: bytes,
       contentType: opts.contentType ?? "application/octet-stream",
-      lastModified: opts.lastModified ?? new Date(),
+      lastModified: opts.lastModified ?? now(),
       tags: {},
     });
   }

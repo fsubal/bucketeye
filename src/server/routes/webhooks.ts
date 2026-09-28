@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { Hono } from "hono";
-import { generateUlid, toIso } from "@/domains/Annotation/model";
+import { generateUlid } from "@/domains/Annotation/model";
+import { now } from "@/utils/datetime";
 import {
   publicWebhook,
   WebhookInput,
@@ -40,7 +41,7 @@ export function webhooksRoutes() {
       active: input.data.active ?? true,
       description: input.data.description ?? "",
       createdBy: c.get("identity").email,
-      createdAt: toIso(new Date()),
+      createdAt: now(),
     };
     await deps.webhookStore.save(webhook);
     upsertWebhook(deps.db, webhook, nowIso());

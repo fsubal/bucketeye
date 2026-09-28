@@ -5,7 +5,7 @@ import {
   type ReviewedObject,
   type ReviewStatus,
 } from "@/domains/ReviewedObject/model";
-import { formatDate } from "@/utils/format";
+import { formatDateTime } from "@/utils/datetime";
 import { StatusBadge } from "./StatusBadge";
 
 const ACTIONS: Array<{ status: ReviewStatus; className: string }> = [
@@ -43,7 +43,7 @@ export function StatusForm({ object }: { object: ReviewedObject }) {
         <StatusBadge status={object.status} />
         {object.reviewer && (
           <span className="text-gray-500">
-            {object.reviewer} · {formatDate(object.statusUpdatedAt)}
+            {object.reviewer} · {formatDateTime(object.statusUpdatedAt)}
           </span>
         )}
       </div>

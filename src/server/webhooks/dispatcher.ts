@@ -1,4 +1,5 @@
-import { generateUlid, toIso } from "@/domains/Annotation/model";
+import { generateUlid } from "@/domains/Annotation/model";
+import { now } from "@/utils/datetime";
 import type { WebhookEvent, WebhookEventType } from "@/domains/Webhook/model";
 import type { Db } from "../db/database";
 import { enqueueDelivery } from "../db/deliveries";
@@ -21,7 +22,7 @@ export class Dispatcher {
     const event = {
       id: generateUlid(),
       type: input.type,
-      createdAt: toIso(new Date()),
+      createdAt: now(),
       url:
         this.publicUrl && input.key
           ? `${this.publicUrl}/objects/${encodeURI(input.key)}`
@@ -41,7 +42,7 @@ export class Dispatcher {
     const event: WebhookEvent = {
       id: generateUlid(),
       type: "ping",
-      createdAt: toIso(new Date()),
+      createdAt: now(),
       url: this.publicUrl,
       data: {
         webhookId,

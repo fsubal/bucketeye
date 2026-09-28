@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Instant } from "@/utils/datetime";
 import { Comment } from "@/domains/Annotation/model";
 import {
   ObjectKind,
@@ -9,8 +10,8 @@ import { encodeKey, request, requestText } from "@/utils/http";
 
 export const IndexRun = z.object({
   id: z.number(),
-  startedAt: z.string(),
-  finishedAt: z.string().nullable(),
+  startedAt: Instant,
+  finishedAt: Instant.nullable(),
   objects: z.number().nullable(),
   comments: z.number().nullable(),
   webhooks: z.number().nullable(),

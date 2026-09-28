@@ -10,6 +10,7 @@ import {
   S3ServiceException,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { fromDate } from "@/utils/datetime";
 import type { Config } from "../config";
 import type { HeadResult, Listing, ListedObject, S3Port } from "./port";
 
@@ -84,7 +85,7 @@ export class AwsS3 implements S3Port {
         key: o.Key!,
         etag: stripQuotes(o.ETag),
         size: o.Size ?? 0,
-        lastModified: o.LastModified ?? null,
+        lastModified: o.LastModified ? fromDate(o.LastModified) : null,
       })),
       prefixes: (res.CommonPrefixes ?? []).map((p) => p.Prefix!),
       nextToken: res.IsTruncated ? (res.NextContinuationToken ?? null) : null,
@@ -113,7 +114,7 @@ export class AwsS3 implements S3Port {
         etag: stripQuotes(res.ETag),
         size: res.ContentLength ?? 0,
         contentType: res.ContentType ?? null,
-        lastModified: res.LastModified ?? null,
+        lastModified: res.LastModified ? fromDate(res.LastModified) : null,
       };
     } catch (e) {
       if (isNotFound(e)) return null;

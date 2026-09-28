@@ -29,6 +29,7 @@ function toComment(row: CommentRow): Comment {
     authorName: row.author_name,
     body: row.body,
     selector: parsed?.data ?? null,
+    // Comment の createdAt は codec なので、保存されている文字列を渡すと Temporal.Instant になる
     createdAt: row.created_at,
   });
 }
@@ -53,7 +54,8 @@ export function upsertComment(
     c.authorName,
     c.body,
     c.selector ? JSON.stringify(c.selector) : null,
-    c.createdAt,
+    // W3C Annotation の created（保存されている文字列）をそのまま写す
+    annotation.created,
   );
   return c;
 }

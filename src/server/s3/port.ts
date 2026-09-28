@@ -1,3 +1,5 @@
+import type { Temporal } from "@/utils/datetime";
+
 /**
  * S3 互換ストレージへの操作を抽象化した口。実装は aws.ts（@aws-sdk/client-s3）と memory.ts（テスト用）。
  * ルートやストアはこの interface だけに依存する
@@ -6,7 +8,7 @@ export type ListedObject = {
   key: string;
   etag: string | null;
   size: number;
-  lastModified: Date | null;
+  lastModified: Temporal.Instant | null;
 };
 export type Listing = {
   objects: ListedObject[];
@@ -18,7 +20,7 @@ export type HeadResult = {
   etag: string | null;
   size: number;
   contentType: string | null;
-  lastModified: Date | null;
+  lastModified: Temporal.Instant | null;
 };
 
 export interface S3Port {

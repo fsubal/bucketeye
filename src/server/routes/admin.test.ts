@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { createTestDeps, identity, type TestDeps } from "../../../test/helpers";
+import { Temporal } from "@/utils/datetime";
 
 let t: TestDeps;
 const admin = { Authorization: "Bearer test-admin-token" };
@@ -84,7 +85,7 @@ describe("GET /admin/storage/*", () => {
       "submissions/a/cover.png",
       "approved",
       "alice@example.com",
-      new Date("2026-06-01T00:00:00Z"),
+      Temporal.Instant.from("2026-06-01T00:00:00Z"),
     );
     await t.commentStore.append("submissions/a/cover.png", {
       body: "hi",
